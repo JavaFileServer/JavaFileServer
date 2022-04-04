@@ -1,0 +1,21 @@
+File Server
+
+// gio e mark
+Server
+ - protocollo messaggi
+ - worker struct
+ - struttura file system
+ - commands:
+    - write
+    - read
+    - delete
+    - exists
+    - list
+
+// auto or both
+Client
+ - 
+
+// gio
+Admin
+ - request statistics
