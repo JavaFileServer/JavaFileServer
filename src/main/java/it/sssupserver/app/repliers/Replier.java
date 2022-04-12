@@ -15,4 +15,9 @@ public interface Replier {
      * content
      */
     public void replyRead(byte[] data) throws Exception;
+    /**
+     * Confirm to the client that the file has
+     * been successfully created
+     */
+    public void replyCreateOrReplace(boolean success) throws Exception;
 }

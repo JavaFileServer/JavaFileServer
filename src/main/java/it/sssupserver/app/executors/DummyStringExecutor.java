@@ -3,6 +3,7 @@ package it.sssupserver.app.executors;
 import java.nio.charset.StandardCharsets;
 
 import it.sssupserver.app.commands.Command;
+import it.sssupserver.app.commands.CreateOrReplaceCommand;
 import it.sssupserver.app.commands.ReadCommand;
 import it.sssupserver.app.repliers.Replier;
 
@@ -33,12 +34,23 @@ public class DummyStringExecutor implements Executor {
         replier.replyRead(bytes);
     }
 
+    private void handleCreateOrReplace(CreateOrReplaceCommand command, Replier replier) throws Exception
+    {
+        var bytes = command.getData();
+        var charset = StandardCharsets.UTF_8;
+        this.content = new String(bytes, charset);
+        replier.replyCreateOrReplace(true);
+    }
+
     @Override
     public void execute(Command command, Replier replier) throws Exception {
         switch (command.getType())
         {
             case READ:
                 handleRead((ReadCommand)command, replier);
+                break;
+            case CREATE_OR_REPLACE:
+                handleCreateOrReplace((CreateOrReplaceCommand)command, replier);
                 break;
             default:
                 throw new Exception("Unsupported command");
@@ -51,15 +63,23 @@ public class DummyStringExecutor implements Executor {
         execute(command, replier);
     }
 
+    private boolean started;
+
     @Override
-    public void start() {
-        // TODO Auto-generated method stub
-        
+    public void start() throws Exception {
+        if (this.started)
+        {
+            throw new Exception("Executor already started");
+        }
+        this.started = true;
     }
 
     @Override
-    public void stop() {
-        // TODO Auto-generated method stub
-        
+    public void stop() throws Exception {
+        if (!this.started)
+        {
+            throw new Exception("Executor not started");
+        }
+        this.started = false;
     }
 }

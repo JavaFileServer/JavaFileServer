@@ -34,6 +34,12 @@ class SimpleBinaryHandlerReplier extends Thread implements Replier {
         // now data can be sent
         bytes.writeTo(this.out);
     }
+
+    @Override
+    public void replyCreateOrReplace(boolean success) throws Exception {
+        // TODO Auto-generated method stub
+        throw new Exception("Not implemented");
+    }
 }
 
 
@@ -83,8 +89,8 @@ public class SimpleBinaryHandler implements RequestHandler {
                         default:
                             throw new Exception("Unknown message version");
                     }
-
-
+                    var replier = new SimpleBinaryHandlerReplier(dout);
+                    SimpleBinaryHandler.this.executor.scheduleExecution(command, replier);
                 }
             } catch (Exception e) {
                 System.err.println("Listener failed to initialize");
@@ -124,7 +130,10 @@ public class SimpleBinaryHandler implements RequestHandler {
         switch (type)
         {
             case 1:
-                command = parseReadCommand(din);
+                command = parseV1ReadCommand(din);
+                break;
+            case 2:
+                command = parseV1CreateOrReplaceCommand(din);
                 break;
             default:
                 throw new Exception("Unknown message type");
@@ -201,22 +210,28 @@ public class SimpleBinaryHandler implements RequestHandler {
         }
     }
 
-    private String readString(DataInputStream din) throws Exception
+    private byte[] readBytes(DataInputStream din) throws Exception
     {
         var len = din.readInt();
-        if (len <= 0)
+        if (len < 0)
         {
             throw new Exception("Malformed input!");
         }
-
+    
         var bytes = new byte[len];
         din.readFully(bytes);
+        return bytes;
+    }
+
+    private String readString(DataInputStream din) throws Exception
+    {
+        var bytes = readBytes(din);
         var recover = new String(bytes, StandardCharsets.UTF_8);
 
         return recover;
     }
 
-    private Command parseReadCommand(DataInputStream din) throws Exception
+    private Command parseV1ReadCommand(DataInputStream din) throws Exception
     {
         String path;
         int begin, len;
@@ -237,6 +252,15 @@ public class SimpleBinaryHandler implements RequestHandler {
 
         var cmd = new ReadCommand(new Path(path), begin, len);
         //System.err.println("CMD = " + cmd);
+        return cmd;
+    }
+
+    private Command parseV1CreateOrReplaceCommand(DataInputStream din) throws Exception
+    {
+        var path = this.readString(din);
+        var data = readBytes(din);
+
+        var cmd = new CreateOrReplaceCommand(new Path(path), data);
         return cmd;
     }
 }

@@ -9,7 +9,7 @@ public interface Executor {
      * in a separate thread.
      * Non-blocking.
      */
-    public void start();
+    public void start() throws Exception;
     /**
      * Stop the executor
      * operating in a separate context.
@@ -17,7 +17,7 @@ public interface Executor {
      * been called.
      * Blocking.
      */
-    public void stop();
+    public void stop() throws Exception;
     /**
      * Execute a single command.
      * Blocking.

@@ -14,10 +14,15 @@ public class App
         System.out.println( "Test handler" );
         var executor = ExecutorFactory.getExecutor();
         var handler = RequestHandlerFactory.getRequestHandler(executor);
+        executor.start();
         System.out.println( "Wait for message..." );
+        handler.start();
         //var cmd = handler.receiveCommand();
         //System.out.println("Cmd: " + cmd);
-        handler.receiveAndExecuteCommand();
+        Thread.sleep(5*60*1000);
+        handler.stop();
+        //handler.receiveAndExecuteCommand();
+        executor.stop();
         System.out.println("MAIN terminated!");
     }
 }
