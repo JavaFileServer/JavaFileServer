@@ -6,6 +6,8 @@ import it.sssupserver.app.repliers.Replier;
 import it.sssupserver.app.base.*;
 
 import java.net.*;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.io.*;
 
@@ -79,11 +81,15 @@ public class SimpleBinaryHandler implements RequestHandler {
         @Override
         public void run()
         {
-            try (var ss = new ServerSocket(SimpleBinaryHandler.this.port))
+            try (var ss = ServerSocketChannel.open())
             {
+                ss.bind(new InetSocketAddress(SimpleBinaryHandler.this.port));
                 while (true)
                 {
-                    var socket = ss.accept();
+                    // See doc
+                    // https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/channels/SocketChannel.html
+                    // Not optimal but at least work
+                    var socket = ss.accept().socket();
                     var in = socket.getInputStream();
                     var out = socket.getOutputStream();
                     var din = new DataInputStream(in);
@@ -103,8 +109,10 @@ public class SimpleBinaryHandler implements RequestHandler {
                     var replier = new SimpleBinaryHandlerReplier(dout);
                     SimpleBinaryHandler.this.executor.scheduleExecution(command, replier);
                 }
+            } catch (ClosedByInterruptException e) {
+                System.err.println("Listener interrupted!");
             } catch (Exception e) {
-                System.err.println("Listener failed to initialize");
+                System.err.println("Listener failed to initialize " + e);
             }   
         }
     }

@@ -19,7 +19,7 @@ public class App
         handler.start();
         //var cmd = handler.receiveCommand();
         //System.out.println("Cmd: " + cmd);
-        Thread.sleep(5*60*1000);
+        Thread.sleep(1000);
         handler.stop();
         //handler.receiveAndExecuteCommand();
         executor.stop();
