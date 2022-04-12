@@ -19,6 +19,7 @@ class SimpleBinaryHandlerReplier extends Thread implements Replier {
 
     @Override
     public void replyRead(byte[] data) throws Exception {
+        // 20 bytes header + payload
         var bytes = new ByteArrayOutputStream(20+data.length);
         var bs = new DataOutputStream(bytes);
         // write data to buffer
@@ -37,8 +38,18 @@ class SimpleBinaryHandlerReplier extends Thread implements Replier {
 
     @Override
     public void replyCreateOrReplace(boolean success) throws Exception {
-        // TODO Auto-generated method stub
-        throw new Exception("Not implemented");
+        // 12 bytes header, no payload
+        var bytes = new ByteArrayOutputStream(12);
+        var bs = new DataOutputStream(bytes);
+        // write data to buffer
+        bs.writeInt(1);    // version
+        bs.writeShort(2);  // command: CREATE OR REPLACE
+        bs.writeShort(1);  // category: answer
+        bs.writeBoolean(success);    // data bytes
+        bs.write(new byte[3]);  // padding
+        bs.flush();
+        // now data can be sent
+        bytes.writeTo(this.out);
     }
 }
 
@@ -103,6 +114,7 @@ public class SimpleBinaryHandler implements RequestHandler {
     public void start() throws Exception {
         var listener = new Listener();
         listener.start();
+        this.worker = listener;
         System.out.println("Worker started");
     }
 
@@ -239,9 +251,9 @@ public class SimpleBinaryHandler implements RequestHandler {
 
         category = din.readShort();
         //System.err.println("Category: " + category);
-        if (category != 1)
+        if (category != 0)
         {
-            throw new Exception("Category must be 1 for requests, foud: "+ category);
+            throw new Exception("Category must be 0 for requests, foud: "+ category);
         }
         path = this.readString(din);
         //System.err.println("Path: " + path);
@@ -257,6 +269,14 @@ public class SimpleBinaryHandler implements RequestHandler {
 
     private Command parseV1CreateOrReplaceCommand(DataInputStream din) throws Exception
     {
+        short category;
+
+        category = din.readShort();
+        //System.err.println("Category: " + category);
+        if (category != 0) {
+            throw new Exception("Category must be 0 for requests, foud: "+ category);
+        }
+
         var path = this.readString(din);
         var data = readBytes(din);
 
