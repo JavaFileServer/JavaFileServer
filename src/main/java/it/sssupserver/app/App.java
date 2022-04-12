@@ -12,9 +12,12 @@ public class App
     {
         System.out.println( "Hello World!" );
         System.out.println( "Test handler" );
-        var handler = RequestHandlerFactory.getRequestHandler();
+        var executor = ExecutorFactory.getExecutor();
+        var handler = RequestHandlerFactory.getRequestHandler(executor);
         System.out.println( "Wait for message..." );
-        var cmd = handler.receiveCommand();
-        System.out.println("Cmd: " + cmd);
+        //var cmd = handler.receiveCommand();
+        //System.out.println("Cmd: " + cmd);
+        handler.receiveAndExecuteCommand();
+        System.out.println("MAIN terminated!");
     }
 }

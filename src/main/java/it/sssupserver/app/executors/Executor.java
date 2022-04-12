@@ -22,5 +22,10 @@ public interface Executor {
      * Execute a single command.
      * Blocking.
      */
-    public void execute(Command command, Replier replier);
+    public void execute(Command command, Replier replier) throws Exception;
+    /**
+     * Schedule command for execution.
+     * May be asynchronous and non-blocking.
+     */
+    public void scheduleExecution(Command command, Replier replier) throws Exception;
 }
