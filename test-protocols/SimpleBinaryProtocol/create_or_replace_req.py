@@ -56,7 +56,7 @@ def recv_ans(sck):
     print("File successfully updated!")
 
 port = 5050
-path = "file/base" if len(sys.argv) < 2 else sys.argv[2]
+path = "file/base" if len(sys.argv) <= 2 else sys.argv[2]
 content = "Another NEW super beautiful message!" if len(sys.argv) == 1 else sys.argv[1]
 
 if __name__ == "__main__":

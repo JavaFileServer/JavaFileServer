@@ -1,7 +1,8 @@
-package it.sssupserver.app.executors;
+package it.sssupserver.app.executors.samples;
 
 import java.nio.charset.StandardCharsets;
 
+import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.commands.AppendCommand;
 import it.sssupserver.app.commands.Command;
 import it.sssupserver.app.commands.CreateOrReplaceCommand;
