@@ -10,4 +10,5 @@ public enum Type {
     DELETE,
     EXISTS,
     LIST,
+    TRUNCATE,
 }
