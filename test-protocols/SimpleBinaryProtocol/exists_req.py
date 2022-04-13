@@ -3,6 +3,7 @@
 import socket
 import time
 from utils import *
+import sys
 
 
 def serialize_exists_message(path):
@@ -54,7 +55,7 @@ def recv_ans(sck):
     print("File exists: ", exists == 1)
 
 port = 5050
-path = "file/base"
+path = "file/base" if len(argv.sys) == 1 else argv.sys[1]
 
 if __name__ == "__main__":
     print("Test WRITE request")

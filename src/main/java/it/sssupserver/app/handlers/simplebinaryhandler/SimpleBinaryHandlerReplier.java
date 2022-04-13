@@ -31,6 +31,21 @@ class SimpleBinaryHandlerReplier extends Thread implements Replier {
     }
 
     @Override
+    public void replyReadNotFound() throws Exception {
+        // 12 bytes packet
+        var bytes = new ByteArrayOutputStream(20);
+        var bs = new DataOutputStream(bytes);
+        // write data to buffer
+        bs.writeInt(1);    // version
+        bs.writeShort(1);  // command: WRITE
+        bs.writeShort(1);  // category: answer
+        bs.writeShort(1);  // status: ERRORE
+        bs.writeShort(0);  // padding
+        // now data can be sent
+        bytes.writeTo(this.out);
+    }
+
+    @Override
     public void replyCreateOrReplace(boolean success) throws Exception {
         // 12 bytes header, no payload
         var bytes = new ByteArrayOutputStream(12);

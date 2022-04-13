@@ -16,6 +16,10 @@ public interface Replier {
      */
     public void replyRead(byte[] data) throws Exception;
     /**
+     * Read failed because file was not found
+     */
+    public void replyReadNotFound() throws Exception;
+    /**
      * Confirm to the client that the file has
      * been successfully created
      */

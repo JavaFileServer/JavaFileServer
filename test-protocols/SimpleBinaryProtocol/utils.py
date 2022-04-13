@@ -2,6 +2,14 @@
 
 import socket
 
+def check_padding(sck, lenght):
+    p = sck.recv(lenght, socket.MSG_WAITALL)
+    if len(p) != lenght:
+        raise Exception("Bad read")
+    padding = int.from_bytes(p, byteorder='big')
+    if padding != 0:
+        raise Exception("Bad flags, found:", padding)
+
 def serialize_string(string):
     b = bytes(string, "utf-8")
     l = len(b)

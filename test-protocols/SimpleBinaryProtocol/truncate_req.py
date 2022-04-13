@@ -3,6 +3,7 @@
 import socket
 import time
 from utils import *
+import sys
 
 
 def serialize_truncate_message(path):
@@ -54,7 +55,7 @@ def recv_ans(sck):
     print("File truncated: ", success == 1)
 
 port = 5050
-path = "file/base"
+path = "file/base" if len(sys.argv) == 1 else sys.argv[1]
 
 if __name__ == "__main__":
     print("Test WRITE request")

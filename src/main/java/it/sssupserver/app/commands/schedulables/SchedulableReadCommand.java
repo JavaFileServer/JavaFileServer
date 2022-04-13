@@ -9,4 +9,5 @@ public abstract class SchedulableReadCommand extends ReadCommand implements Sche
     }
 
     public abstract void reply(byte[] data) throws Exception;
+    public abstract void notFound() throws Exception;
 }
