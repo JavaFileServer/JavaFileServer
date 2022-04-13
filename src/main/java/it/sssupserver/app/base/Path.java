@@ -47,6 +47,15 @@ public class Path {
         this.path = tmp;
     }
 
+    /**
+     * Return true if the path is flat, i.e.
+     * there are no folder.
+     */
+    public boolean isFlat()
+    {
+        return getPath().length == 1;
+    }
+
     public String[] getPath()
     {
         return this.path;
