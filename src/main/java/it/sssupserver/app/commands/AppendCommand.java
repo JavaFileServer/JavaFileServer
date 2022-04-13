@@ -6,6 +6,11 @@ public class AppendCommand implements Command {
     private Path path;
     byte[] data;
 
+    public AppendCommand(AppendCommand cmd)
+    {
+        this(cmd.getPath(), cmd.getData());
+    }
+
     public AppendCommand(Path path, byte[] data)
     {
         this.path = path;

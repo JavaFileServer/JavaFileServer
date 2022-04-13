@@ -6,6 +6,11 @@ public class CreateOrReplaceCommand implements Command {
     private Path path;
     byte[] data;
 
+    public CreateOrReplaceCommand(CreateOrReplaceCommand cmd)
+    {
+        this(cmd.getPath(), cmd.getData());
+    }
+
     public CreateOrReplaceCommand(Path path, byte[] data)
     {
         this.path = path;

@@ -8,8 +8,12 @@ import it.sssupserver.app.commands.CreateOrReplaceCommand;
 import it.sssupserver.app.commands.ExistsCommand;
 import it.sssupserver.app.commands.ReadCommand;
 import it.sssupserver.app.commands.TruncateCommand;
+import it.sssupserver.app.commands.schedulables.SchedulableAppendCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableCommand;
+import it.sssupserver.app.commands.schedulables.SchedulableCreateOrReplaceCommand;
+import it.sssupserver.app.commands.schedulables.SchedulableExistsCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableReadCommand;
+import it.sssupserver.app.commands.schedulables.SchedulableTruncateCommand;
 import it.sssupserver.app.repliers.Replier;
 
 /**
@@ -58,6 +62,14 @@ public class DummyStringExecutor implements Executor {
         replier.replyCreateOrReplace(true);
     }
 
+    private void handleCreateOrReplace(SchedulableCreateOrReplaceCommand command) throws Exception
+    {
+        var bytes = command.getData();
+        var charset = StandardCharsets.UTF_8;
+        this.content = new String(bytes, charset);
+        command.reply(true);
+    }
+
     private void handleAppend(AppendCommand command, Replier replier) throws Exception
     {
         var bytes = command.getData();
@@ -66,16 +78,35 @@ public class DummyStringExecutor implements Executor {
         replier.replyAppend(true);
     }
 
+    private void handleAppend(SchedulableAppendCommand command) throws Exception
+    {
+        var bytes = command.getData();
+        var charset = StandardCharsets.UTF_8;
+        this.content += new String(bytes, charset);
+        command.reply(true);
+    }
+
     private void handleExists(ExistsCommand command, Replier replier) throws Exception
     {
         // by default file always exists
         replier.replyExists(true);
     }
 
+    private void handleExists(SchedulableExistsCommand command) throws Exception
+    {
+        command.reply(true);
+    }
+
     private void handleTruncate(TruncateCommand command, Replier replier) throws Exception
     {
         this.content = "";
         replier.replyTruncate(true);
+    }
+
+    private void handleTruncate(SchedulableTruncateCommand command) throws Exception
+    {
+        this.content = "";
+        command.reply(true);
     }
 
     @Override
@@ -106,6 +137,14 @@ public class DummyStringExecutor implements Executor {
     public void execute(SchedulableCommand command) throws Exception {
         if (command instanceof SchedulableReadCommand) {
             handleRead((SchedulableReadCommand)command);
+        } else if (command instanceof SchedulableExistsCommand) {
+            handleExists((SchedulableExistsCommand)command);
+        } else if (command instanceof SchedulableTruncateCommand) {
+            handleTruncate((SchedulableTruncateCommand)command);
+        } else if (command instanceof SchedulableAppendCommand) {
+            handleAppend((SchedulableAppendCommand)command);
+        } else if (command instanceof SchedulableCreateOrReplaceCommand) {
+            handleCreateOrReplace((SchedulableCreateOrReplaceCommand)command);
         } else {
             throw new Exception("Unsupported schedulable command");
         }

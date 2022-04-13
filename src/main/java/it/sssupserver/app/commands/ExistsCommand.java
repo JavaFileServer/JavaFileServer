@@ -8,6 +8,11 @@ import it.sssupserver.app.base.Path;
 public class ExistsCommand implements Command {
     private Path path;
 
+    public ExistsCommand(ExistsCommand cmd)
+    {
+        this(cmd.getPath());
+    }
+
     public ExistsCommand(Path path)
     {
         this.path = path;

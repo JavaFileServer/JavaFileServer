@@ -1,7 +1,7 @@
 package it.sssupserver.app.handlers;
 
 import it.sssupserver.app.commands.*;
-import it.sssupserver.app.commands.schedulables.SchedulableReadCommand;
+import it.sssupserver.app.commands.schedulables.*;
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.repliers.Replier;
 import it.sssupserver.app.base.*;
@@ -37,7 +37,103 @@ class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         // now data can be sent
         bytes.writeTo(this.out);
     }
-} 
+}
+
+class SimpleBinarySchedulableExistsCommand extends SchedulableExistsCommand {
+    private DataOutputStream out;
+    public SimpleBinarySchedulableExistsCommand(ExistsCommand cmd, DataOutputStream out) {
+        super(cmd);
+        this.out = out;
+    }
+
+    @Override
+    public void reply(boolean exists) throws Exception {
+        // 12 bytes header, no payload
+        var bytes = new ByteArrayOutputStream(12);
+        var bs = new DataOutputStream(bytes);
+        // write data to buffer
+        bs.writeInt(1);    // version
+        bs.writeShort(3);  // command: EXISTS
+        bs.writeShort(1);  // category: answer
+        bs.writeBoolean(exists);    // data bytes
+        bs.write(new byte[3]);  // padding
+        bs.flush();
+        // now data can be sent
+        bytes.writeTo(this.out);
+    }
+}
+
+class SimpleBinarySchedulableTruncateCommand extends SchedulableTruncateCommand {
+    private DataOutputStream out;
+    public SimpleBinarySchedulableTruncateCommand(TruncateCommand cmd, DataOutputStream out) {
+        super(cmd);
+        this.out = out;
+    }
+
+    @Override
+    public void reply(boolean success) throws Exception {
+        // 12 bytes header, no payload
+        var bytes = new ByteArrayOutputStream(12);
+        var bs = new DataOutputStream(bytes);
+        // write data to buffer
+        bs.writeInt(1);    // version
+        bs.writeShort(4);  // command: TRUNCATE
+        bs.writeShort(1);  // category: answer
+        bs.writeBoolean(success);    // data bytes
+        bs.write(new byte[3]);  // padding
+        bs.flush();
+        // now data can be sent
+        bytes.writeTo(this.out);
+    }
+}
+
+class SimpleBinarySchedulableCreateOrReplaceCommand extends SchedulableCreateOrReplaceCommand {
+    private DataOutputStream out;
+    public SimpleBinarySchedulableCreateOrReplaceCommand(CreateOrReplaceCommand cmd, DataOutputStream out) {
+        super(cmd);
+        this.out = out;
+    }
+
+    @Override
+    public void reply(boolean success) throws Exception {
+        // 12 bytes header, no payload
+        var bytes = new ByteArrayOutputStream(12);
+        var bs = new DataOutputStream(bytes);
+        // write data to buffer
+        bs.writeInt(1);    // version
+        bs.writeShort(2);  // command: CREATE OR REPLACE
+        bs.writeShort(1);  // category: answer
+        bs.writeBoolean(success);    // data bytes
+        bs.write(new byte[3]);  // padding
+        bs.flush();
+        // now data can be sent
+        bytes.writeTo(this.out);
+    }
+}
+
+class SimpleBinarySchedulableAppendCommand extends SchedulableAppendCommand {
+    private DataOutputStream out;
+    public SimpleBinarySchedulableAppendCommand(AppendCommand cmd, DataOutputStream out) {
+        super(cmd);
+        this.out = out;
+    }
+
+    @Override
+    public void reply(boolean success) throws Exception {
+        // 12 bytes header, no payload
+        var bytes = new ByteArrayOutputStream(12);
+        var bs = new DataOutputStream(bytes);
+        // write data to buffer
+        bs.writeInt(1);    // version
+        bs.writeShort(5);  // command: APPEND
+        bs.writeShort(1);  // category: answer
+        bs.writeBoolean(success);    // data bytes
+        bs.write(new byte[3]);  // padding
+        bs.flush();
+        // now data can be sent
+        bytes.writeTo(this.out);
+    }
+}
 
 class SimpleBinaryHandlerReplier extends Thread implements Replier {
     private DataOutputStream out;
@@ -183,6 +279,14 @@ public class SimpleBinaryHandler implements RequestHandler {
                     }
                     if (command instanceof ReadCommand) {
                         executor.execute(new SimpleBinarySchedulableReadCommand((ReadCommand)command, dout));
+                    } else if (command instanceof ExistsCommand) {
+                        executor.execute(new SimpleBinarySchedulableExistsCommand((ExistsCommand)command, dout));
+                    } else if (command instanceof TruncateCommand) {
+                        executor.execute(new SimpleBinarySchedulableTruncateCommand((TruncateCommand)command, dout));
+                    } else if (command instanceof CreateOrReplaceCommand) {
+                        executor.execute(new SimpleBinarySchedulableCreateOrReplaceCommand((CreateOrReplaceCommand)command, dout));
+                    } else if (command instanceof AppendCommand) {
+                        executor.execute(new SimpleBinarySchedulableAppendCommand((AppendCommand)command, dout));
                     } else {
                         var replier = new SimpleBinaryHandlerReplier(dout);
                         SimpleBinaryHandler.this.executor.scheduleExecution(command, replier);

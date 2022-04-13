@@ -8,6 +8,11 @@ import it.sssupserver.app.base.Path;
 public class TruncateCommand implements Command {
     private Path path;
 
+    public TruncateCommand(TruncateCommand cmd)
+    {
+        this(cmd.getPath());
+    }
+
     public TruncateCommand(Path path)
     {
         this.path = path;
