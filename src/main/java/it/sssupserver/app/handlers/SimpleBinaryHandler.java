@@ -55,6 +55,22 @@ class SimpleBinaryHandlerReplier extends Thread implements Replier {
     }
 
     @Override
+    public void replyAppend(boolean success) throws Exception {
+        // 12 bytes header, no payload
+        var bytes = new ByteArrayOutputStream(12);
+        var bs = new DataOutputStream(bytes);
+        // write data to buffer
+        bs.writeInt(1);    // version
+        bs.writeShort(5);  // command: APPEND
+        bs.writeShort(1);  // category: answer
+        bs.writeBoolean(success);    // data bytes
+        bs.write(new byte[3]);  // padding
+        bs.flush();
+        // now data can be sent
+        bytes.writeTo(this.out);
+    }
+
+    @Override
     public void replyExists(boolean exists) throws Exception {
         // 12 bytes header, no payload
         var bytes = new ByteArrayOutputStream(12);
@@ -193,6 +209,9 @@ public class SimpleBinaryHandler implements RequestHandler {
             case 4:
                 command = parseV1TruncateCommand(din);
                 break;
+            case 5:
+                command = parseV1Append(din);
+                break;
             default:
                 throw new Exception("Unknown message type");
         }
@@ -329,7 +348,16 @@ public class SimpleBinaryHandler implements RequestHandler {
         var cmd = new CreateOrReplaceCommand(new Path(path), data);
         return cmd;
     }
-    
+
+    private Command parseV1Append(DataInputStream din) throws Exception
+    {
+        checkCategory(din);
+        var path = this.readString(din);
+        var data = readBytes(din);
+        var cmd = new AppendCommand(new Path(path), data);
+        return cmd;
+    }
+
     private Command parseV1ExistsCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
@@ -337,7 +365,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         var cmd = new ExistsCommand(new Path(path));
         return cmd;
     }
-    
+
     private Command parseV1TruncateCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);

@@ -11,4 +11,5 @@ public enum Type {
     EXISTS,
     LIST,
     TRUNCATE,
+    APPEND,
 }

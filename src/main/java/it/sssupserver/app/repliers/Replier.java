@@ -21,6 +21,12 @@ public interface Replier {
      */
     public void replyCreateOrReplace(boolean success) throws Exception;
     /**
+     * Confirm to the client that the data have
+     * been successfully appended to the original
+     * file
+     */
+    public void replyAppend(boolean success) throws Exception;
+    /**
      * Confirm that the required file exists. 
      */
     public void replyExists(boolean exists) throws Exception;

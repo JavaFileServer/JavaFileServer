@@ -2,6 +2,7 @@ package it.sssupserver.app.executors;
 
 import java.nio.charset.StandardCharsets;
 
+import it.sssupserver.app.commands.AppendCommand;
 import it.sssupserver.app.commands.Command;
 import it.sssupserver.app.commands.CreateOrReplaceCommand;
 import it.sssupserver.app.commands.ExistsCommand;
@@ -44,6 +45,14 @@ public class DummyStringExecutor implements Executor {
         replier.replyCreateOrReplace(true);
     }
 
+    private void handleAppend(AppendCommand command, Replier replier) throws Exception
+    {
+        var bytes = command.getData();
+        var charset = StandardCharsets.UTF_8;
+        this.content += new String(bytes, charset);
+        replier.replyAppend(true);
+    }
+
     private void handleExists(ExistsCommand command, Replier replier) throws Exception
     {
         // by default file always exists
@@ -71,6 +80,9 @@ public class DummyStringExecutor implements Executor {
                 break;
             case TRUNCATE:
                 handleTruncate((TruncateCommand)command, replier);
+                break;
+            case APPEND:
+                handleAppend((AppendCommand)command, replier);
                 break;
             default:
                 throw new Exception("Unsupported command");
