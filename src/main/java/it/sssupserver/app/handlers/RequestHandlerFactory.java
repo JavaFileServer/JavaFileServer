@@ -1,6 +1,7 @@
 package it.sssupserver.app.handlers;
 
 import it.sssupserver.app.executors.Executor;
+import it.sssupserver.app.handlers.simplebinaryhandler.*;
 
 /**
  * This class will be used to supply request

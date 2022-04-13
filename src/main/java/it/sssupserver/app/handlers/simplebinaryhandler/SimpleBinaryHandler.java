@@ -1,5 +1,6 @@
-package it.sssupserver.app.handlers;
+package it.sssupserver.app.handlers.simplebinaryhandler;
 
+import it.sssupserver.app.handlers.*;
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
 import it.sssupserver.app.executors.Executor;

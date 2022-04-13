@@ -158,8 +158,7 @@ public class DummyStringExecutor implements Executor {
 
     @Override
     public void scheduleExecution(SchedulableCommand command) throws Exception {
-        // TODO Auto-generated method stub
-        
+        execute(command);
     }
 
     private boolean started;
