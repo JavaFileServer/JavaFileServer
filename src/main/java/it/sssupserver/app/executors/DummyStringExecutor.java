@@ -8,6 +8,8 @@ import it.sssupserver.app.commands.CreateOrReplaceCommand;
 import it.sssupserver.app.commands.ExistsCommand;
 import it.sssupserver.app.commands.ReadCommand;
 import it.sssupserver.app.commands.TruncateCommand;
+import it.sssupserver.app.commands.schedulables.SchedulableCommand;
+import it.sssupserver.app.commands.schedulables.SchedulableReadCommand;
 import it.sssupserver.app.repliers.Replier;
 
 /**
@@ -35,6 +37,17 @@ public class DummyStringExecutor implements Executor {
         var charset = StandardCharsets.UTF_8;
         var bytes = content.getBytes(charset);
         replier.replyRead(bytes);
+    }
+
+    private void handleRead(SchedulableReadCommand command) throws Exception
+    {
+        if (command.getBegin() != 0 || command.getLen() != 0)
+        {
+            throw new Exception("Unsupported commanf options");
+        }
+        var charset = StandardCharsets.UTF_8;
+        var bytes = content.getBytes(charset);
+        command.reply(bytes);
     }
 
     private void handleCreateOrReplace(CreateOrReplaceCommand command, Replier replier) throws Exception
@@ -90,9 +103,24 @@ public class DummyStringExecutor implements Executor {
     }
 
     @Override
+    public void execute(SchedulableCommand command) throws Exception {
+        if (command instanceof SchedulableReadCommand) {
+            handleRead((SchedulableReadCommand)command);
+        } else {
+            throw new Exception("Unsupported schedulable command");
+        }
+    }
+
+    @Override
     public void scheduleExecution(Command command, Replier replier) throws Exception
     {
         execute(command, replier);
+    }
+
+    @Override
+    public void scheduleExecution(SchedulableCommand command) throws Exception {
+        // TODO Auto-generated method stub
+        
     }
 
     private boolean started;

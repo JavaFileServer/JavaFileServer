@@ -1,6 +1,7 @@
 package it.sssupserver.app.handlers;
 
 import it.sssupserver.app.commands.*;
+import it.sssupserver.app.commands.schedulables.SchedulableReadCommand;
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.repliers.Replier;
 import it.sssupserver.app.base.*;
@@ -11,6 +12,32 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.io.*;
 
+class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
+    private DataOutputStream out;
+    public SimpleBinarySchedulableReadCommand(ReadCommand cmd, DataOutputStream out) {
+        super(cmd);
+        this.out = out;
+    }
+
+    @Override
+    public void reply(byte[] data) throws Exception {
+        // 20 bytes header + payload
+        var bytes = new ByteArrayOutputStream(20+data.length);
+        var bs = new DataOutputStream(bytes);
+        // write data to buffer
+        bs.writeInt(1);    // version
+        bs.writeShort(1);  // command: WRITE
+        bs.writeShort(1);  // category: answer
+        bs.writeShort(0);  // status: OK
+        bs.writeShort(0);  // bitfield: end of answer
+        bs.writeInt(0);    // offset from the beginning
+        bs.writeInt(data.length);    // data length
+        bs.write(data);    // data bytes
+        bs.flush();
+        // now data can be sent
+        bytes.writeTo(this.out);
+    }
+} 
 
 class SimpleBinaryHandlerReplier extends Thread implements Replier {
     private DataOutputStream out;
@@ -154,8 +181,12 @@ public class SimpleBinaryHandler implements RequestHandler {
                         default:
                             throw new Exception("Unknown message version");
                     }
-                    var replier = new SimpleBinaryHandlerReplier(dout);
-                    SimpleBinaryHandler.this.executor.scheduleExecution(command, replier);
+                    if (command instanceof ReadCommand) {
+                        executor.execute(new SimpleBinarySchedulableReadCommand((ReadCommand)command, dout));
+                    } else {
+                        var replier = new SimpleBinaryHandlerReplier(dout);
+                        SimpleBinaryHandler.this.executor.scheduleExecution(command, replier);
+                    }
                 }
             } catch (ClosedByInterruptException e) {
                 System.err.println("Listener interrupted!");
@@ -282,7 +313,11 @@ public class SimpleBinaryHandler implements RequestHandler {
             }
             System.out.println("Command: " + command);
             System.out.println("Execute command...");
-            executor.execute(command, new SimpleBinaryHandlerReplier(dout));
+            if (command instanceof ReadCommand) {
+                executor.execute(new SimpleBinarySchedulableReadCommand((ReadCommand)command, dout));
+            } else {
+                executor.execute(command, new SimpleBinaryHandlerReplier(dout));
+            }
             System.out.println("DONE!");
         }
     }
@@ -310,46 +345,24 @@ public class SimpleBinaryHandler implements RequestHandler {
 
     private Command parseV1ReadCommand(DataInputStream din) throws Exception
     {
-        String path;
-        int begin, len;
-        short category;
-
-        category = din.readShort();
-        //System.err.println("Category: " + category);
-        if (category != 0)
-        {
-            throw new Exception("Category must be 0 for requests, foud: "+ category);
-        }
-        path = this.readString(din);
-        //System.err.println("Path: " + path);
-        begin = din.readInt();
-        //System.err.println("Begin: " + begin);
-        len = din.readInt();
-        //System.err.println("Len: " + len);
-
+        checkCategory(din);
+        String path = this.readString(din);
+        int begin = din.readInt();
+        int len = din.readInt();
         var cmd = new ReadCommand(new Path(path), begin, len);
-        //System.err.println("CMD = " + cmd);
         return cmd;
     }
 
     private Command parseV1CreateOrReplaceCommand(DataInputStream din) throws Exception
     {
-        short category;
-
-        category = din.readShort();
-        //System.err.println("Category: " + category);
-        if (category != 0) {
-            throw new Exception("Category must be 0 for requests, foud: "+ category);
-        }
-
+        checkCategory(din);
         var path = this.readString(din);
         var data = readBytes(din);
-
         var cmd = new CreateOrReplaceCommand(new Path(path), data);
         return cmd;
     }
 
-    private Command parseV1Append(DataInputStream din) throws Exception
+    private AppendCommand parseV1Append(DataInputStream din) throws Exception
     {
         checkCategory(din);
         var path = this.readString(din);
@@ -358,7 +371,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         return cmd;
     }
 
-    private Command parseV1ExistsCommand(DataInputStream din) throws Exception
+    private ExistsCommand parseV1ExistsCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
         var path = this.readString(din);
@@ -366,7 +379,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         return cmd;
     }
 
-    private Command parseV1TruncateCommand(DataInputStream din) throws Exception
+    private TruncateCommand parseV1TruncateCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
         var path = this.readString(din);

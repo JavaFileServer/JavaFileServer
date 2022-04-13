@@ -8,6 +8,11 @@ public class ReadCommand implements Command {
     private int begin;
     private int len;
 
+    public ReadCommand(ReadCommand cmd)
+    {
+        this(cmd.getPath(), cmd.getBegin(), cmd.getLen());
+    }
+
     public ReadCommand(Path path, int begin, int len)
     {
         this.path = path;

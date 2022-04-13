@@ -1,6 +1,7 @@
 package it.sssupserver.app.executors;
 
 import it.sssupserver.app.commands.*;
+import it.sssupserver.app.commands.schedulables.SchedulableCommand;
 import it.sssupserver.app.repliers.*;
 
 public interface Executor {
@@ -24,8 +25,18 @@ public interface Executor {
      */
     public void execute(Command command, Replier replier) throws Exception;
     /**
+     * Execute a single command.
+     * Blocking.
+     */
+    public void execute(SchedulableCommand command) throws Exception;
+    /**
      * Schedule command for execution.
      * May be asynchronous and non-blocking.
      */
     public void scheduleExecution(Command command, Replier replier) throws Exception;
+    /**
+     * Schedule command for execution.
+     * May be asynchronous and non-blocking.
+     */
+    public void scheduleExecution(SchedulableCommand command) throws Exception;
 }
