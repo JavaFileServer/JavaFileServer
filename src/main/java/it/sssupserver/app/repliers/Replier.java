@@ -20,4 +20,12 @@ public interface Replier {
      * been successfully created
      */
     public void replyCreateOrReplace(boolean success) throws Exception;
+    /**
+     * Confirm that the required file exists. 
+     */
+    public void replyExists(boolean exists) throws Exception;
+    /**
+     * Confirm that the file was successfully truncated. 
+     */
+    public void replyTruncate(boolean success) throws Exception;
 }

@@ -53,6 +53,38 @@ class SimpleBinaryHandlerReplier extends Thread implements Replier {
         // now data can be sent
         bytes.writeTo(this.out);
     }
+
+    @Override
+    public void replyExists(boolean exists) throws Exception {
+        // 12 bytes header, no payload
+        var bytes = new ByteArrayOutputStream(12);
+        var bs = new DataOutputStream(bytes);
+        // write data to buffer
+        bs.writeInt(1);    // version
+        bs.writeShort(3);  // command: EXISTS
+        bs.writeShort(1);  // category: answer
+        bs.writeBoolean(exists);    // data bytes
+        bs.write(new byte[3]);  // padding
+        bs.flush();
+        // now data can be sent
+        bytes.writeTo(this.out);
+    }
+
+    @Override
+    public void replyTruncate(boolean success) throws Exception {
+        // 12 bytes header, no payload
+        var bytes = new ByteArrayOutputStream(12);
+        var bs = new DataOutputStream(bytes);
+        // write data to buffer
+        bs.writeInt(1);    // version
+        bs.writeShort(4);  // command: TRUNCATE
+        bs.writeShort(1);  // category: answer
+        bs.writeBoolean(success);    // data bytes
+        bs.write(new byte[3]);  // padding
+        bs.flush();
+        // now data can be sent
+        bytes.writeTo(this.out);
+    }
 }
 
 
@@ -154,6 +186,12 @@ public class SimpleBinaryHandler implements RequestHandler {
                 break;
             case 2:
                 command = parseV1CreateOrReplaceCommand(din);
+                break;
+            case 3:
+                command = parseV1ExistsCommand(din);
+                break;
+            case 4:
+                command = parseV1TruncateCommand(din);
                 break;
             default:
                 throw new Exception("Unknown message type");
@@ -290,5 +328,29 @@ public class SimpleBinaryHandler implements RequestHandler {
 
         var cmd = new CreateOrReplaceCommand(new Path(path), data);
         return cmd;
+    }
+    
+    private Command parseV1ExistsCommand(DataInputStream din) throws Exception
+    {
+        checkCategory(din);
+        var path = this.readString(din);
+        var cmd = new ExistsCommand(new Path(path));
+        return cmd;
+    }
+    
+    private Command parseV1TruncateCommand(DataInputStream din) throws Exception
+    {
+        checkCategory(din);
+        var path = this.readString(din);
+        var cmd = new TruncateCommand(new Path(path));
+        return cmd;
+    }
+
+    private void checkCategory(DataInputStream din) throws Exception
+    {
+        short category = din.readShort();
+        if (category != 0) {
+            throw new Exception("Category must be 0 for requests, foud: "+ category);
+        }
     }
 }

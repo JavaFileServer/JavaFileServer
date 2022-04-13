@@ -4,7 +4,9 @@ import java.nio.charset.StandardCharsets;
 
 import it.sssupserver.app.commands.Command;
 import it.sssupserver.app.commands.CreateOrReplaceCommand;
+import it.sssupserver.app.commands.ExistsCommand;
 import it.sssupserver.app.commands.ReadCommand;
+import it.sssupserver.app.commands.TruncateCommand;
 import it.sssupserver.app.repliers.Replier;
 
 /**
@@ -42,6 +44,18 @@ public class DummyStringExecutor implements Executor {
         replier.replyCreateOrReplace(true);
     }
 
+    private void handleExists(ExistsCommand command, Replier replier) throws Exception
+    {
+        // by default file always exists
+        replier.replyExists(true);
+    }
+
+    private void handleTruncate(TruncateCommand command, Replier replier) throws Exception
+    {
+        this.content = "";
+        replier.replyTruncate(true);
+    }
+
     @Override
     public void execute(Command command, Replier replier) throws Exception {
         switch (command.getType())
@@ -51,6 +65,12 @@ public class DummyStringExecutor implements Executor {
                 break;
             case CREATE_OR_REPLACE:
                 handleCreateOrReplace((CreateOrReplaceCommand)command, replier);
+                break;
+            case EXISTS:
+                handleExists((ExistsCommand)command, replier);
+                break;
+            case TRUNCATE:
+                handleTruncate((TruncateCommand)command, replier);
                 break;
             default:
                 throw new Exception("Unsupported command");
