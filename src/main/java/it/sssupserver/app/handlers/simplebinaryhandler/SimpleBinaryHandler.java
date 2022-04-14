@@ -3,6 +3,7 @@ package it.sssupserver.app.handlers.simplebinaryhandler;
 import it.sssupserver.app.handlers.*;
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.executors.Executor;
+import it.sssupserver.app.executors.ReplyingExecutor;
 import it.sssupserver.app.base.*;
 
 import java.net.*;
@@ -72,9 +73,12 @@ public class SimpleBinaryHandler implements RequestHandler {
                         executor.scheduleExecution(new SimpleBinarySchedulableCreateOrReplaceCommand((CreateOrReplaceCommand)command, dout));
                     } else if (command instanceof AppendCommand) {
                         executor.scheduleExecution(new SimpleBinarySchedulableAppendCommand((AppendCommand)command, dout));
-                    } else {
+                    } else if (SimpleBinaryHandler.this.executor instanceof ReplyingExecutor) {
                         var replier = new SimpleBinaryHandlerReplier(dout);
-                        SimpleBinaryHandler.this.executor.scheduleExecution(command, replier);
+                        ((ReplyingExecutor)SimpleBinaryHandler.this.executor).scheduleExecution(command, replier);
+                    } else {
+                        dout.close();
+                        throw new Exception("Cannot handle command");
                     }
                 }
             } catch (ClosedByInterruptException e) {
@@ -204,8 +208,11 @@ public class SimpleBinaryHandler implements RequestHandler {
             System.out.println("Execute command...");
             if (command instanceof ReadCommand) {
                 executor.execute(new SimpleBinarySchedulableReadCommand((ReadCommand)command, dout));
+            } else if (SimpleBinaryHandler.this.executor instanceof ReplyingExecutor) {
+                ((ReplyingExecutor)executor).execute(command, new SimpleBinaryHandlerReplier(dout));
             } else {
-                executor.execute(command, new SimpleBinaryHandlerReplier(dout));
+                dout.close();
+                throw new Exception("Cannot handle command");
             }
             System.out.println("DONE!");
         }

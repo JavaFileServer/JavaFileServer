@@ -3,6 +3,7 @@ package it.sssupserver.app.executors.samples;
 import java.nio.charset.StandardCharsets;
 
 import it.sssupserver.app.executors.Executor;
+import it.sssupserver.app.executors.ReplyingExecutor;
 import it.sssupserver.app.commands.AppendCommand;
 import it.sssupserver.app.commands.Command;
 import it.sssupserver.app.commands.CreateOrReplaceCommand;
@@ -25,7 +26,7 @@ import java.util.function.BiFunction;
  * This dummy executor own a single string
  * that treat as it was the content of a file 
  */
-public class DummyMapExecutor implements Executor {
+public class DummyMapExecutor implements ReplyingExecutor {
     private Map<String,String> content;
 
     public DummyMapExecutor()
