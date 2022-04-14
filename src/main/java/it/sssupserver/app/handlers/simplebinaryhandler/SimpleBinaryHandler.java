@@ -63,15 +63,15 @@ public class SimpleBinaryHandler implements RequestHandler {
                             throw new Exception("Unknown message version");
                     }
                     if (command instanceof ReadCommand) {
-                        executor.execute(new SimpleBinarySchedulableReadCommand((ReadCommand)command, dout));
+                        executor.scheduleExecution(new SimpleBinarySchedulableReadCommand((ReadCommand)command, dout));
                     } else if (command instanceof ExistsCommand) {
-                        executor.execute(new SimpleBinarySchedulableExistsCommand((ExistsCommand)command, dout));
+                        executor.scheduleExecution(new SimpleBinarySchedulableExistsCommand((ExistsCommand)command, dout));
                     } else if (command instanceof TruncateCommand) {
-                        executor.execute(new SimpleBinarySchedulableTruncateCommand((TruncateCommand)command, dout));
+                        executor.scheduleExecution(new SimpleBinarySchedulableTruncateCommand((TruncateCommand)command, dout));
                     } else if (command instanceof CreateOrReplaceCommand) {
-                        executor.execute(new SimpleBinarySchedulableCreateOrReplaceCommand((CreateOrReplaceCommand)command, dout));
+                        executor.scheduleExecution(new SimpleBinarySchedulableCreateOrReplaceCommand((CreateOrReplaceCommand)command, dout));
                     } else if (command instanceof AppendCommand) {
-                        executor.execute(new SimpleBinarySchedulableAppendCommand((AppendCommand)command, dout));
+                        executor.scheduleExecution(new SimpleBinarySchedulableAppendCommand((AppendCommand)command, dout));
                     } else {
                         var replier = new SimpleBinaryHandlerReplier(dout);
                         SimpleBinaryHandler.this.executor.scheduleExecution(command, replier);
