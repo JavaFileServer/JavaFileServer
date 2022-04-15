@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.ExecutionException;
@@ -11,6 +12,7 @@ import java.util.concurrent.ExecutionException;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.schedulables.SchedulableCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableCreateOrReplaceCommand;
+import it.sssupserver.app.commands.schedulables.SchedulableExistsCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableReadCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableTruncateCommand;
 import it.sssupserver.app.executors.Executor;
@@ -97,6 +99,15 @@ public class FlatTmpExecutor implements Executor {
         }
     }
 
+    private void handleExists(SchedulableExistsCommand command) throws Exception {
+        ensureFlatPath(command.getPath());
+        var filename = command.getPath().toString();
+        var filePath = this.baseDir.resolve(filename);
+        // For security reasons do no follow symlinks
+        var exists = Files.exists(filePath, LinkOption.NOFOLLOW_LINKS);
+        command.reply(exists);
+    }
+
     @Override
     public void execute(SchedulableCommand command) throws Exception {
         if (command instanceof SchedulableReadCommand) {
@@ -105,6 +116,8 @@ public class FlatTmpExecutor implements Executor {
             handleCreateOrReplace((SchedulableCreateOrReplaceCommand)command);
         } else if (command instanceof SchedulableTruncateCommand) {
             handleTruncate((SchedulableTruncateCommand)command);
+        } else if (command instanceof SchedulableExistsCommand) {
+            handleExists((SchedulableExistsCommand)command);
         } else {
             throw new Exception("Unknown command");
         }
