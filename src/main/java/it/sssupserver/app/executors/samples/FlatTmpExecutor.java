@@ -12,6 +12,7 @@ import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.schedulables.SchedulableCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableCreateOrReplaceCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableReadCommand;
+import it.sssupserver.app.commands.schedulables.SchedulableTruncateCommand;
 import it.sssupserver.app.executors.Executor;
 
 public class FlatTmpExecutor implements Executor {
@@ -83,12 +84,27 @@ public class FlatTmpExecutor implements Executor {
         }
     }
 
+    private void handleTruncate(SchedulableTruncateCommand command) throws Exception {
+        ensureFlatPath(command.getPath());
+        var filename = command.getPath().toString();
+        var filePath = this.baseDir.resolve(filename);
+        try (var fin = FileChannel.open(filePath, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
+            command.reply(true);
+        } catch (NoSuchFileException e) {
+            command.reply(false);
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
     @Override
     public void execute(SchedulableCommand command) throws Exception {
         if (command instanceof SchedulableReadCommand) {
             handleRead((SchedulableReadCommand)command);
         } else if (command instanceof SchedulableCreateOrReplaceCommand) {
             handleCreateOrReplace((SchedulableCreateOrReplaceCommand)command);
+        } else if (command instanceof SchedulableTruncateCommand) {
+            handleTruncate((SchedulableTruncateCommand)command);
         } else {
             throw new Exception("Unknown command");
         }
