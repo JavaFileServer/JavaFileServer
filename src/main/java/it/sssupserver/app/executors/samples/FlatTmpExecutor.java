@@ -20,6 +20,7 @@ import it.sssupserver.app.commands.schedulables.SchedulableExistsCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableListCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableReadCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableTruncateCommand;
+import it.sssupserver.app.commands.schedulables.SchedulableWriteCommand;
 import it.sssupserver.app.executors.Executor;
 
 public class FlatTmpExecutor implements Executor {
@@ -156,6 +157,20 @@ public class FlatTmpExecutor implements Executor {
         command.reply(items);
     }
 
+    private void handleWrite(SchedulableWriteCommand command) throws Exception {
+        ensureFlatPath(command.getPath());
+        var filename = command.getPath().toString();
+        var filePath = this.baseDir.resolve(filename);
+        try (var fout = FileChannel.open(filePath, StandardOpenOption.WRITE)) {
+            var bytes = command.getData();
+            var buffer = ByteBuffer.wrap(bytes);
+            fout.write(buffer, command.getOffset());
+            command.reply(true);
+        } catch (Exception e) {
+            command.reply(false);
+        }
+    }
+
     @Override
     public void execute(SchedulableCommand command) throws Exception {
         if (command instanceof SchedulableReadCommand) {
@@ -172,6 +187,8 @@ public class FlatTmpExecutor implements Executor {
             handleAppend((SchedulableAppendCommand)command);
         } else if (command instanceof SchedulableListCommand) {
             handleList((SchedulableListCommand)command);
+        } else if (command instanceof SchedulableWriteCommand) {
+            handleWrite((SchedulableWriteCommand)command);
         } else {
             throw new Exception("Unknown command");
         }
