@@ -55,7 +55,7 @@ def recv_ans(sck):
     print("File exists: ", exists == 1)
 
 port = 5050
-path = "file/base" if len(argv.sys) == 1 else argv.sys[1]
+path = "file/base" if len(sys.argv) == 1 else sys.argv[1]
 
 if __name__ == "__main__":
     print("Test WRITE request")
