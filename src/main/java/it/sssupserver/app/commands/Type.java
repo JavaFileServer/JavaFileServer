@@ -14,5 +14,5 @@ public enum Type {
     TRUNCATE,
     APPEND,
     COPY,
-    RENAME,
+    MOVE,
 }

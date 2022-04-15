@@ -20,6 +20,7 @@ import it.sssupserver.app.commands.schedulables.SchedulableCreateOrReplaceComman
 import it.sssupserver.app.commands.schedulables.SchedulableDeleteCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableExistsCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableListCommand;
+import it.sssupserver.app.commands.schedulables.SchedulableMoveCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableReadCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableTruncateCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableWriteCommand;
@@ -202,6 +203,21 @@ public class FlatTmpExecutor implements Executor {
         }
     }
 
+    private void handleMove(SchedulableMoveCommand command) throws Exception {
+        ensureFlatPath(command.getSource());
+        ensureFlatPath(command.getDestination());
+        var src = command.getSource().toString();
+        var source = this.baseDir.resolve(src);
+        var dst = command.getDestination().toString();
+        var destination = this.baseDir.resolve(dst);
+        try {
+            Files.move(source, destination);
+            command.reply(true);
+        } catch (Exception e) {
+            command.reply(false);
+        }
+    }
+
     @Override
     public void execute(SchedulableCommand command) throws Exception {
         if (command instanceof SchedulableReadCommand) {
@@ -224,6 +240,8 @@ public class FlatTmpExecutor implements Executor {
             handleCreate((SchedulableCreateCommand)command);
         } else if (command instanceof SchedulableCopyCommand) {
             handleCopy((SchedulableCopyCommand)command);
+        } else if (command instanceof SchedulableMoveCommand) {
+            handleMove((SchedulableMoveCommand)command);
         } else {
             throw new Exception("Unknown command");
         }
