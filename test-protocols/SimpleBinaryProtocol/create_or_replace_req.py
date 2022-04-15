@@ -55,11 +55,21 @@ def recv_ans(sck):
         raise Exception("Bad padding, found:", padding)
     print("File successfully updated!")
 
-port = 5050
-path = "file/base" if len(sys.argv) <= 2 else sys.argv[2]
-content = "Another NEW super beautiful message!" if len(sys.argv) == 1 else sys.argv[1]
+def usage(comm):
+    print("Usage:")
+    print("\t", comm, "path", "data")
+    exit(1)
 
 if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        usage(sys.argv[0])
+
+    port = 5050
+    path = sys.argv[1]
+    content = sys.argv[2]
+    #path = "file/base" if len(sys.argv) <= 2 else sys.argv[2]
+    #content = "Another NEW super beautiful message!" if len(sys.argv) == 1 else sys.argv[1]
+
     print("Test CREATE OR REPLACE request")
     print("Message that will be uploaded!")
     cmd = serialize_create_or_replace_message(path, content)

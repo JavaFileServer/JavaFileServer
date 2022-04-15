@@ -2,6 +2,12 @@
 
 import socket
 
+def read_int(sck, length):
+    v = sck.recv(length, socket.MSG_WAITALL)
+    if len(v) != length:
+        raise Exception("Bad read "+ str(len(v)))
+    return int.from_bytes(v, byteorder='big')
+
 def check_version(sck, version):
     v = sck.recv(4, socket.MSG_WAITALL)
     if len(v) != 4:
@@ -9,6 +15,11 @@ def check_version(sck, version):
     found = int.from_bytes(v, byteorder='big')
     if version != found:
         raise Exception("Bad version, found:", found, "instead of", version)
+
+def check_type(sck, cmd_type):
+    found = read_int(sck, 2)
+    if cmd_type != found:
+        raise Exception("Bad type, found:", found, "instead of", cmd_type)
 
 def check_category(sck, category):
     cat = sck.recv(2, socket.MSG_WAITALL)
@@ -24,7 +35,7 @@ def check_padding(sck, lenght):
         raise Exception("Bad read")
     padding = int.from_bytes(p, byteorder='big')
     if padding != 0:
-        raise Exception("Bad flags, found:", padding)
+        raise Exception("Bad padding, found:", padding)
 
 def serialize_string(string):
     b = bytes(string, "utf-8")
@@ -42,6 +53,14 @@ def deserialize_string(byteseq):
     s = byteseq[4:4+l].decode('utf-8')
     return (s, l+4)
 
+def read_string(sck):
+    L = read_int(sck, 4)
+    B = sck.recv(L, socket.MSG_WAITALL)
+    if len(B) != L:
+        raise Exception("Bad read: get", len(B), "bytes instead of", L)
+    S = deserialize_string(L.to_bytes(4,byteorder='big') + B)
+    return S[0]
+
 def send_cmd(port, msg):
     print("Connecting TCP socket to port", port)
     sck = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -50,3 +69,8 @@ def send_cmd(port, msg):
     sck.send(msg)
     print("Data sent!")
     return sck
+
+def check_int(sck, length, val):
+    n = read_int(sck, length)
+    if n != val:
+        raise Exception("Malformed message, read", n, "instead of", val)

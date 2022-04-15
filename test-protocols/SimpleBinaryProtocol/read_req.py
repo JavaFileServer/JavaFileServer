@@ -73,15 +73,26 @@ def recv_ans(sck):
         raise Exception("Bad status, found:", status)
 
 port = 5050
-path = "file/base" if len(sys.argv) == 1 else sys.argv[1]
+
+def usage(comm):
+    print("Usage:")
+    print("\t", comm, "path", "[offset]", "[length]")
+    exit(1)
 
 if __name__ == "__main__":
-    print("Test WRITE request")
-    s = "Ciao panino al caffééé"
-    b = serialize_string(s)
-    print(s, '=>', b)
-    print('decoded: ', deserialize_string(b))
-    cmd = serialize_write_message(path)
+    if len(sys.argv) < 2:
+        usage(sys.argv[0])
+
+    path = sys.argv[1]
+    offset = 0 if len(sys.argv) <= 2 else int(sys.argv[2])
+    length = 0 if len(sys.argv) <= 3 else int(sys.argv[3])
+
+    print("Test READ request")
+    #s = "Ciao panino al caffééé"
+    #b = serialize_string(s)
+    #print(s, '=>', b)
+    #print('decoded: ', deserialize_string(b))
+    cmd = serialize_write_message(path, offset, length)
     print("Write MSG =>", cmd)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)
