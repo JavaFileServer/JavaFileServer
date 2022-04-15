@@ -1,6 +1,6 @@
 # VS Code files
 .vscode
-
+**/__pycache__
 
 # Compiled class file
 **.class
