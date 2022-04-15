@@ -6,6 +6,9 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.stream.Collector;
 
 import it.sssupserver.app.base.InvalidPathException;
 import it.sssupserver.app.base.Path;
@@ -14,6 +17,7 @@ import it.sssupserver.app.commands.schedulables.SchedulableCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableCreateOrReplaceCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableDeleteCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableExistsCommand;
+import it.sssupserver.app.commands.schedulables.SchedulableListCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableReadCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableTruncateCommand;
 import it.sssupserver.app.executors.Executor;
@@ -51,6 +55,12 @@ public class FlatTmpExecutor implements Executor {
     private void ensureFlatPath(Path path) throws InvalidPathException {
         if (!path.isFlat()) {
             throw new InvalidPathException("Path is not flat!");
+        }
+    }
+
+    private void ensureRootPath(Path path) throws InvalidPathException {
+        if (!path.isRoot()) {
+            throw new InvalidPathException("Path is not root!");
         }
     }
 
@@ -129,8 +139,21 @@ public class FlatTmpExecutor implements Executor {
             command.reply(true);
         } catch (Exception e) {
             command.reply(false);
-            throw e;
         }
+    }
+
+    private void handleList(SchedulableListCommand command) throws Exception {
+        ensureRootPath(command.getPath());
+        Collection<Path> items = new LinkedList<>();
+        try (var dirContent = Files.newDirectoryStream(this.baseDir)) {
+            for (var entry : dirContent) {
+                var r = this.baseDir.relativize(entry);
+                var e = r.toString();
+                var p = new Path(e);
+                items.add(p);
+            }
+        }
+        command.reply(items);
     }
 
     @Override
@@ -147,6 +170,8 @@ public class FlatTmpExecutor implements Executor {
             handleDelete((SchedulableDeleteCommand)command);
         } else if (command instanceof SchedulableAppendCommand) {
             handleAppend((SchedulableAppendCommand)command);
+        } else if (command instanceof SchedulableListCommand) {
+            handleList((SchedulableListCommand)command);
         } else {
             throw new Exception("Unknown command");
         }

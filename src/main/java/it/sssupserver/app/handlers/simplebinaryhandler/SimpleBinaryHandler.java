@@ -8,6 +8,7 @@ import it.sssupserver.app.executors.ReplyingExecutor;
 import it.sssupserver.app.base.*;
 
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.charset.StandardCharsets;
@@ -49,6 +50,8 @@ public class SimpleBinaryHandler implements RequestHandler {
                     executor.scheduleExecution(new SimpleBinarySchedulableCreateOrReplaceCommand((CreateOrReplaceCommand)command, dout));
                 } else if (command instanceof AppendCommand) {
                     executor.scheduleExecution(new SimpleBinarySchedulableAppendCommand((AppendCommand)command, dout));
+                } else if (command instanceof ListCommand) {
+                    executor.scheduleExecution(new SimpleBinarySchedulableListCommand((ListCommand)command, dout));
                 } else if (command instanceof DeleteCommand) {
                     executor.scheduleExecution(new SimpleBinarySchedulableDeleteCommand((DeleteCommand)command, dout));
                 } else if (SimpleBinaryHandler.this.executor instanceof ReplyingExecutor) {
@@ -160,6 +163,9 @@ public class SimpleBinaryHandler implements RequestHandler {
             case 6:
                 command = parseV1DeleteCommand(din);
                 break;
+            case 7:
+                command = parseV1ListCommand(din);
+                break;
             default:
                 throw new Exception("Unknown message type");
         }
@@ -263,6 +269,17 @@ public class SimpleBinaryHandler implements RequestHandler {
         return recover;
     }
 
+    public static byte[] serializeString(String string) throws Exception
+    {
+        var data = string.getBytes(StandardCharsets.UTF_8);
+        var bytes = new ByteArrayOutputStream(4 + data.length);
+        var bs = new DataOutputStream(bytes);
+        bs.writeInt(data.length);
+        bs.write(data);
+        bs.flush();
+        return bytes.toByteArray();
+    }
+
     private Command parseV1ReadCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
@@ -312,6 +329,14 @@ public class SimpleBinaryHandler implements RequestHandler {
         checkCategory(din);
         var path = this.readString(din);
         var cmd = new DeleteCommand(new Path(path));
+        return cmd;
+    }
+
+    private ListCommand parseV1ListCommand(DataInputStream din) throws Exception
+    {
+        checkCategory(din);
+        var path = this.readString(din);
+        var cmd = new ListCommand(new Path(path));
         return cmd;
     }
 
