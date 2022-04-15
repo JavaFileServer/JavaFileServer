@@ -5,23 +5,25 @@ import time
 from utils import *
 import sys
 
-def serialize_create_message(path, content):
+
+def serialize_copy_message(source, destination):
     version = 1
-    cmd = 9
+    cmd = 10
     category = 0
 
     return version.to_bytes(4,byteorder='big')+\
         cmd.to_bytes(2,byteorder='big')+\
         category.to_bytes(2,byteorder='big')+\
-        serialize_string(path)+\
-        serialize_string(content)
+        serialize_string(source)+\
+        serialize_string(destination)
+
 
 def recv_ans(sck):
     print("Receving response from socket")
     # message version
     check_version(sck, 1)
     # message type
-    check_type(sck, 9)
+    check_type(sck, 10)
     # message category
     check_category(sck, 1)
     # message status
@@ -30,26 +32,26 @@ def recv_ans(sck):
     check_padding(sck, 3)
     print("Status =", status == 1)
 
+port = 5050
+
 def usage(comm):
     print("Usage:")
-    print("\t", comm, "path", "data")
+    print("\t", comm, "src-path", "dst-path")
     exit(1)
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         usage(sys.argv[0])
 
-    port = 5050
-    path = sys.argv[1]
-    content = sys.argv[2]
-    #path = "file/base" if len(sys.argv) <= 2 else sys.argv[2]
-    #content = "Another NEW super beautiful message!" if len(sys.argv) == 1 else sys.argv[1]
+    src = sys.argv[1]
+    dst = sys.argv[2]
 
-    print("Test CREATE request")
-    print("Message that will be uploaded!")
-    cmd = serialize_create_message(path, content)
-    print("Create MSG =>", cmd)
+    print("Test COPY request")
+    cmd = serialize_copy_message(src, dst)
+
+    print("Copy MSG =>", cmd)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)
     #time.sleep(1)
     recv_ans(sck)
+    sck.close()

@@ -8,11 +8,11 @@ import sys
 
 def serialize_write_message(path, begin = 0, length = 0):
     version = 1
-    read = 1
+    cmd = 1
     category = 0
 
     return version.to_bytes(4,byteorder='big')+\
-        read.to_bytes(2,byteorder='big')+\
+        cmd.to_bytes(2,byteorder='big')+\
         category.to_bytes(2,byteorder='big')+\
         serialize_string(path)+\
         begin.to_bytes(4,byteorder='big')+\
@@ -24,19 +24,11 @@ def recv_ans(sck):
     # message version
     check_version(sck, 1)
     # message type
-    t = sck.recv(2, socket.MSG_WAITALL)
-    if len(t) != 2:
-        raise Exception("Bad read")
-    typem = int.from_bytes(t, byteorder='big')
-    if typem != 1:
-        raise Exception("Bad message type, found:", typem)
+    check_type(sck, 1)
     # message category
     check_category(sck, 1)
     # message status
-    s = sck.recv(2, socket.MSG_WAITALL)
-    if len(s) != 2:
-        raise Exception("Bad read")
-    status = int.from_bytes(s, byteorder='big')
+    status = read_int(sck, 2)
     if status == 0:
         # message status
         f = sck.recv(2, socket.MSG_WAITALL)
