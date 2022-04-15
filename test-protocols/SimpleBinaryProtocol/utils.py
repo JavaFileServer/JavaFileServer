@@ -2,6 +2,22 @@
 
 import socket
 
+def check_version(sck, version):
+    v = sck.recv(4, socket.MSG_WAITALL)
+    if len(v) != 4:
+        raise Exception("Bad read "+ str(len(v)))
+    found = int.from_bytes(v, byteorder='big')
+    if version != found:
+        raise Exception("Bad version, found:", found, "instead of", version)
+
+def check_category(sck, category):
+    cat = sck.recv(2, socket.MSG_WAITALL)
+    if len(cat) != 2:
+        raise Exception("Bad read")
+    found = int.from_bytes(cat, byteorder='big')
+    if category != found:
+        raise Exception("Bad category, found:", found, "instead of", category)
+
 def check_padding(sck, lenght):
     p = sck.recv(lenght, socket.MSG_WAITALL)
     if len(p) != lenght:

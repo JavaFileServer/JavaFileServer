@@ -22,12 +22,7 @@ def serialize_write_message(path, begin = 0, length = 0):
 def recv_ans(sck):
     print("Receving response from socket")
     # message version
-    v = sck.recv(4, socket.MSG_WAITALL)
-    if len(v) != 4:
-        raise Exception("Bad read "+ str(len(v)))
-    version = int.from_bytes(v, byteorder='big')
-    if version != 1:
-        raise Exception("Bad version, found:", version)
+    check_version(sck, 1)
     # message type
     t = sck.recv(2, socket.MSG_WAITALL)
     if len(t) != 2:
@@ -36,12 +31,7 @@ def recv_ans(sck):
     if typem != 1:
         raise Exception("Bad message type, found:", typem)
     # message category
-    cat = sck.recv(2, socket.MSG_WAITALL)
-    if len(cat) != 2:
-        raise Exception("Bad read")
-    category = int.from_bytes(cat, byteorder='big')
-    if category != 1:
-        raise Exception("Bad category, found:", category)
+    check_category(sck, 1)
     # message status
     s = sck.recv(2, socket.MSG_WAITALL)
     if len(s) != 2:
