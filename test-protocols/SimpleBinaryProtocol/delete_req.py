@@ -22,12 +22,7 @@ def recv_ans(sck):
     # message version
     check_version(sck, 1)
     # message type
-    t = sck.recv(2, socket.MSG_WAITALL)
-    if len(t) != 2:
-        raise Exception("Bad read")
-    typem = int.from_bytes(t, byteorder='big')
-    if typem != 6:
-        raise Exception("Bad message type, found:", typem)
+    check_type(sck, 6)
     # message category
     check_category(sck, 1)
     # message status
