@@ -15,4 +15,5 @@ public enum Type {
     APPEND,
     COPY,
     MOVE,
+    MKDIR,
 }
