@@ -17,7 +17,7 @@ public class Path {
 
     public static boolean checkPath(String p)
     {
-        return test.test(p);
+        return p.isEmpty() || test.test(p);
     }
     
     private String[] path;
@@ -54,6 +54,11 @@ public class Path {
     public boolean isFlat()
     {
         return getPath().length == 1;
+    }
+
+    public boolean isRoot()
+    {
+        return isFlat() && (this.path[0].isEmpty() || this.path[0].equals("."));
     }
 
     public String[] getPath()
