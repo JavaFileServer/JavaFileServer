@@ -22,7 +22,7 @@ public class CopyCommand implements Command {
 
     public Type getType()
     {
-        return Type.TRUNCATE;
+        return Type.COPY;
     }
 
     public Path getSource()
