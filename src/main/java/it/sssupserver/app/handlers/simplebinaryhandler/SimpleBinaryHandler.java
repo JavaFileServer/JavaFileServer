@@ -49,6 +49,8 @@ public class SimpleBinaryHandler implements RequestHandler {
                     executor.scheduleExecution(new SimpleBinarySchedulableCreateOrReplaceCommand((CreateOrReplaceCommand)command, dout));
                 } else if (command instanceof AppendCommand) {
                     executor.scheduleExecution(new SimpleBinarySchedulableAppendCommand((AppendCommand)command, dout));
+                } else if (command instanceof DeleteCommand) {
+                    executor.scheduleExecution(new SimpleBinarySchedulableDeleteCommand((DeleteCommand)command, dout));
                 } else if (SimpleBinaryHandler.this.executor instanceof ReplyingExecutor) {
                     var replier = new SimpleBinaryHandlerReplier(dout);
                     ((ReplyingExecutor)SimpleBinaryHandler.this.executor).scheduleExecution(command, replier);
@@ -154,6 +156,9 @@ public class SimpleBinaryHandler implements RequestHandler {
                 break;
             case 5:
                 command = parseV1Append(din);
+                break;
+            case 6:
+                command = parseV1DeleteCommand(din);
                 break;
             default:
                 throw new Exception("Unknown message type");
@@ -299,6 +304,14 @@ public class SimpleBinaryHandler implements RequestHandler {
         checkCategory(din);
         var path = this.readString(din);
         var cmd = new TruncateCommand(new Path(path));
+        return cmd;
+    }
+
+    private DeleteCommand parseV1DeleteCommand(DataInputStream din) throws Exception
+    {
+        checkCategory(din);
+        var path = this.readString(din);
+        var cmd = new DeleteCommand(new Path(path));
         return cmd;
     }
 

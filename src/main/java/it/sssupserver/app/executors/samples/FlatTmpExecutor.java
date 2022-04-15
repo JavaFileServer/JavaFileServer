@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutionException;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.schedulables.SchedulableCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableCreateOrReplaceCommand;
+import it.sssupserver.app.commands.schedulables.SchedulableDeleteCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableExistsCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableReadCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableTruncateCommand;
@@ -108,6 +109,15 @@ public class FlatTmpExecutor implements Executor {
         command.reply(exists);
     }
 
+    private void handleDelete(SchedulableDeleteCommand command) throws Exception {
+        ensureFlatPath(command.getPath());
+        var filename = command.getPath().toString();
+        var filePath = this.baseDir.resolve(filename);
+        // For security reasons do no follow symlinks
+        var success = Files.deleteIfExists(filePath);
+        command.reply(success);
+    }
+
     @Override
     public void execute(SchedulableCommand command) throws Exception {
         if (command instanceof SchedulableReadCommand) {
@@ -118,6 +128,8 @@ public class FlatTmpExecutor implements Executor {
             handleTruncate((SchedulableTruncateCommand)command);
         } else if (command instanceof SchedulableExistsCommand) {
             handleExists((SchedulableExistsCommand)command);
+        } else if (command instanceof SchedulableDeleteCommand) {
+            handleDelete((SchedulableDeleteCommand)command);
         } else {
             throw new Exception("Unknown command");
         }
