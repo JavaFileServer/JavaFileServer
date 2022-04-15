@@ -10,7 +10,7 @@ import java.util.regex.*;
 public class Path {
     private static Predicate<String> test;
     {
-        var re = "[/\\w\\.\\s]+";
+        var re = "[/\\w\\.\\s-]+";
         var pattern = Pattern.compile(re, Pattern.CASE_INSENSITIVE);
         test = pattern.asMatchPredicate();
     }
@@ -21,27 +21,27 @@ public class Path {
     }
     
     private String[] path;
-    public Path(String p) throws Exception
+    public Path(String p) throws InvalidPathException
     {
         if (!checkPath(p))
         {
-            throw new Exception("Invalid path: " + p);
+            throw new InvalidPathException("Invalid path: " + p);
         }
 
         var tmp = p.split("/");
         if (tmp.length == 0)
         {
-            throw new Exception("Path cannot be empty");
+            throw new InvalidPathException("Path cannot be empty");
         }
         for (var x : tmp)
         {
             if (x.equals(".."))
             {
-                throw new Exception("Path cannot contains '..'");
+                throw new InvalidPathException("Path cannot contains '..'");
             }
             else if (x.startsWith(" ") || x.endsWith(" "))
             {
-                throw new Exception("Path cannot be limited by ' '");
+                throw new InvalidPathException("Path cannot be limited by ' '");
             }
         }
         this.path = tmp;
