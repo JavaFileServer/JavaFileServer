@@ -1,15 +1,15 @@
 package it.sssupserver.app.executors.samples;
 
-import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.ExecutionException;
 
+import it.sssupserver.app.base.InvalidPathException;
 import it.sssupserver.app.base.Path;
+import it.sssupserver.app.commands.schedulables.SchedulableAppendCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableCreateOrReplaceCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableDeleteCommand;
@@ -48,9 +48,9 @@ public class FlatTmpExecutor implements Executor {
         this.started = false;
     }
 
-    private void ensureFlatPath(Path path) throws Exception {
+    private void ensureFlatPath(Path path) throws InvalidPathException {
         if (!path.isFlat()) {
-            throw new Exception("Path is not flat!");
+            throw new InvalidPathException("Path is not flat!");
         }
     }
 
@@ -118,6 +118,21 @@ public class FlatTmpExecutor implements Executor {
         command.reply(success);
     }
 
+    private void handleAppend(SchedulableAppendCommand command) throws Exception {
+        ensureFlatPath(command.getPath());
+        var filename = command.getPath().toString();
+        var filePath = this.baseDir.resolve(filename);
+        try (var fout = FileChannel.open(filePath, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
+            var bytes = command.getData();
+            var buffer = ByteBuffer.wrap(bytes);
+            fout.write(buffer);
+            command.reply(true);
+        } catch (Exception e) {
+            command.reply(false);
+            throw e;
+        }
+    }
+
     @Override
     public void execute(SchedulableCommand command) throws Exception {
         if (command instanceof SchedulableReadCommand) {
@@ -130,6 +145,8 @@ public class FlatTmpExecutor implements Executor {
             handleExists((SchedulableExistsCommand)command);
         } else if (command instanceof SchedulableDeleteCommand) {
             handleDelete((SchedulableDeleteCommand)command);
+        } else if (command instanceof SchedulableAppendCommand) {
+            handleAppend((SchedulableAppendCommand)command);
         } else {
             throw new Exception("Unknown command");
         }
