@@ -2,6 +2,7 @@ package it.sssupserver.app.handlers.simplebinaryhandler;
 
 import it.sssupserver.app.handlers.*;
 import it.sssupserver.app.commands.*;
+import it.sssupserver.app.commands.schedulables.SchedulableCommand;
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.executors.ReplyingExecutor;
 import it.sssupserver.app.base.*;
@@ -35,6 +36,35 @@ public class SimpleBinaryHandler implements RequestHandler {
     }
     
     class Listener extends Thread {
+
+        private void scheduleCommand(Command command, DataOutputStream dout) {
+            try {
+                if (command instanceof ReadCommand) {
+                    executor.scheduleExecution(new SimpleBinarySchedulableReadCommand((ReadCommand)command, dout));
+                } else if (command instanceof ExistsCommand) {
+                    executor.scheduleExecution(new SimpleBinarySchedulableExistsCommand((ExistsCommand)command, dout));
+                } else if (command instanceof TruncateCommand) {
+                    executor.scheduleExecution(new SimpleBinarySchedulableTruncateCommand((TruncateCommand)command, dout));
+                } else if (command instanceof CreateOrReplaceCommand) {
+                    executor.scheduleExecution(new SimpleBinarySchedulableCreateOrReplaceCommand((CreateOrReplaceCommand)command, dout));
+                } else if (command instanceof AppendCommand) {
+                    executor.scheduleExecution(new SimpleBinarySchedulableAppendCommand((AppendCommand)command, dout));
+                } else if (SimpleBinaryHandler.this.executor instanceof ReplyingExecutor) {
+                    var replier = new SimpleBinaryHandlerReplier(dout);
+                    ((ReplyingExecutor)SimpleBinaryHandler.this.executor).scheduleExecution(command, replier);
+                } else {
+                    dout.close();
+                    throw new Exception("Cannot handle command");
+                }
+            } catch (Exception e) {
+                String stackTrace = ""; int i=0;
+                for (var st : e.getStackTrace()) {
+                    stackTrace += ++i + ") " + st.toString() + "\n";
+                }
+                System.err.println("Error occurred while handling command [" + command + "]: " + e + "\n|> stacktrace: " + stackTrace);
+            }
+        }
+
         @Override
         public void run()
         {
@@ -53,33 +83,22 @@ public class SimpleBinaryHandler implements RequestHandler {
                     var dout = new DataOutputStream(out);
                     int version; Command command;
 
-                    version = din.readInt();
-                    //System.err.println("Version: " + version);
-                    switch (version)
-                    {
-                        case 1:
-                            command = reveiveV1Command(din);
-                            break;
-                        default:
-                            throw new Exception("Unknown message version");
+                    try {
+                        version = din.readInt();
+                        //System.err.println("Version: " + version);
+                        switch (version)
+                        {
+                            case 1:
+                                command = reveiveV1Command(din);
+                                break;
+                            default:
+                                throw new Exception("Unknown message version");
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Error occurred while parising command: " + e);
+                        continue;
                     }
-                    if (command instanceof ReadCommand) {
-                        executor.scheduleExecution(new SimpleBinarySchedulableReadCommand((ReadCommand)command, dout));
-                    } else if (command instanceof ExistsCommand) {
-                        executor.scheduleExecution(new SimpleBinarySchedulableExistsCommand((ExistsCommand)command, dout));
-                    } else if (command instanceof TruncateCommand) {
-                        executor.scheduleExecution(new SimpleBinarySchedulableTruncateCommand((TruncateCommand)command, dout));
-                    } else if (command instanceof CreateOrReplaceCommand) {
-                        executor.scheduleExecution(new SimpleBinarySchedulableCreateOrReplaceCommand((CreateOrReplaceCommand)command, dout));
-                    } else if (command instanceof AppendCommand) {
-                        executor.scheduleExecution(new SimpleBinarySchedulableAppendCommand((AppendCommand)command, dout));
-                    } else if (SimpleBinaryHandler.this.executor instanceof ReplyingExecutor) {
-                        var replier = new SimpleBinaryHandlerReplier(dout);
-                        ((ReplyingExecutor)SimpleBinaryHandler.this.executor).scheduleExecution(command, replier);
-                    } else {
-                        dout.close();
-                        throw new Exception("Cannot handle command");
-                    }
+                    scheduleCommand(command, dout);
                 }
             } catch (ClosedByInterruptException e) {
                 System.err.println("Listener interrupted!");
