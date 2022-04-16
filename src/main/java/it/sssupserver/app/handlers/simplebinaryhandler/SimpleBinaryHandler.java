@@ -300,7 +300,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         return bytes.toByteArray();
     }
 
-    private Command parseV1ReadCommand(DataInputStream din) throws Exception
+    private ReadCommand parseV1ReadCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
         String path = this.readString(din);
@@ -310,7 +310,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         return cmd;
     }
 
-    private Command parseV1CreateOrReplaceCommand(DataInputStream din) throws Exception
+    private CreateOrReplaceCommand parseV1CreateOrReplaceCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
         var path = this.readString(din);
