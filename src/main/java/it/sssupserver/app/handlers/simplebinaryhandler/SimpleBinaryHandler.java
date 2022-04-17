@@ -360,7 +360,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         return cmd;
     }
 
-    private Command parseV1WriteCommand(DataInputStream din) throws Exception
+    private WriteCommand parseV1WriteCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
         var path = this.readString(din);
@@ -370,7 +370,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         return cmd;
     }
 
-    private Command parseV1CreateCommand(DataInputStream din) throws Exception
+    private CreateCommand parseV1CreateCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
         var path = this.readString(din);
@@ -379,7 +379,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         return cmd;
     }
 
-    private Command parseV1CopyCommand(DataInputStream din) throws Exception
+    private CopyCommand parseV1CopyCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
         var src = this.readString(din);
