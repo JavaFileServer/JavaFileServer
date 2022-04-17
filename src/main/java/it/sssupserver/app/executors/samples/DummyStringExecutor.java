@@ -38,7 +38,7 @@ public class DummyStringExecutor implements ReplyingExecutor {
     {
         if (command.getBegin() != 0 || command.getLen() != 0)
         {
-            throw new Exception("Unsupported commanf options");
+            throw new Exception("Unsupported command options");
         }
         var charset = StandardCharsets.UTF_8;
         var bytes = content.getBytes(charset);
