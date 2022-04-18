@@ -50,7 +50,7 @@ public class SimpleBinarySchedulableListCommand extends SchedulableListCommand {
         bs.writeInt(1);    // version
         bs.writeShort(7);  // command: LIST
         bs.writeShort(1);  // category: answer
-        bs.writeShort(0);  // status: OK
+        bs.writeShort(0);  // status: ERROR
         bs.writeShort(0);  // padding
         bs.flush();
         // now data can be sent
