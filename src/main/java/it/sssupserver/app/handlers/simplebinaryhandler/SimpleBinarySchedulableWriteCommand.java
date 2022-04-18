@@ -8,7 +8,7 @@ import it.sssupserver.app.commands.schedulables.*;
 
 public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand {
     private DataOutputStream out;
-    protected SimpleBinarySchedulableWriteCommand(WriteCommand cmd, DataOutputStream out)
+    public SimpleBinarySchedulableWriteCommand(WriteCommand cmd, DataOutputStream out)
     {
         super(cmd);
         this.out = out;
