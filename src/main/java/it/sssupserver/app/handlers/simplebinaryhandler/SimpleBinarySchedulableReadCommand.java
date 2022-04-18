@@ -19,7 +19,7 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         var bs = new DataOutputStream(bytes);
         // write data to buffer
         bs.writeInt(1);    // version
-        bs.writeShort(1);  // command: WRITE
+        bs.writeShort(1);  // command: READ
         bs.writeShort(1);  // category: answer
         bs.writeShort(0);  // status: OK
         bs.writeShort(0);  // bitfield: end of answer
