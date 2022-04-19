@@ -55,7 +55,7 @@ public class DummyMapExecutor implements ReplyingExecutor {
     {
         if (command.getBegin() != 0 || command.getLen() != 0)
         {
-            throw new Exception("Unsupported commanf options");
+            throw new Exception("Unsupported command options");
         }
         var file = command.getPath().toString();
         var data = this.content.get(file);
