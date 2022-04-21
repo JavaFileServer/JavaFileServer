@@ -37,7 +37,7 @@ def recv_ans(sck):
 
 def usage(comm):
     print("Usage:")
-    versioprint("\t", comm, "username", "path")
+    print("\t", comm, "username", "path")
     exit(1)
 
 port = 5050

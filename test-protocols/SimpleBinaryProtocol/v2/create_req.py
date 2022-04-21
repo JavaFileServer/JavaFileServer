@@ -33,7 +33,7 @@ def recv_ans(sck):
 
 def usage(comm):
     print("Usage:")
-    versioprint("\t", comm, "username", "path", "data")
+    print("\t", comm, "username", "path", "data")
     exit(1)
 
 if __name__ == "__main__":

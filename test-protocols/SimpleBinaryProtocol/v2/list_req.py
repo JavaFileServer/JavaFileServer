@@ -50,7 +50,7 @@ port = 5050
 
 def usage(comm):
     print("Usage:")
-    versioprint("\t", comm, "username", "[path]")
+    print("\t", comm, "username", "[path]")
     exit(1)
 
 

@@ -37,7 +37,7 @@ port = 5050
 
 def usage(comm):
     print("Usage:")
-    versioprint("\t", comm, "username", "src-path", "dst-path")
+    print("\t", comm, "username", "src-path", "dst-path")
     exit(1)
 
 if __name__ == "__main__":
