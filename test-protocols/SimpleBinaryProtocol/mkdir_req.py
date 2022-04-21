@@ -32,7 +32,7 @@ def recv_ans(sck):
     success = int.from_bytes(s, byteorder='big')
     # check padding
     check_padding(sck, 3)
-    print("File truncated: ", success == 1)
+    print("Directory created: ", success == 1)
 
 port = 5050
 
