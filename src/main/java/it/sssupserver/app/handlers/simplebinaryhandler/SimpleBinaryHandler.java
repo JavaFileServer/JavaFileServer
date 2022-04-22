@@ -35,49 +35,43 @@ public class SimpleBinaryHandler implements RequestHandler {
         this.port = port;
         this.executor = executor;
     }
-    
+
     class Listener extends Thread {
 
-        private void scheduleCommand(Command command, DataOutputStream dout) {
-            try {
-                if (command instanceof ReadCommand) {
-                    executor.scheduleExecution(new SimpleBinarySchedulableReadCommand((ReadCommand)command, dout));
-                } else if (command instanceof ExistsCommand) {
-                    executor.scheduleExecution(new SimpleBinarySchedulableExistsCommand((ExistsCommand)command, dout));
-                } else if (command instanceof TruncateCommand) {
-                    executor.scheduleExecution(new SimpleBinarySchedulableTruncateCommand((TruncateCommand)command, dout));
-                } else if (command instanceof CreateOrReplaceCommand) {
-                    executor.scheduleExecution(new SimpleBinarySchedulableCreateOrReplaceCommand((CreateOrReplaceCommand)command, dout));
-                } else if (command instanceof AppendCommand) {
-                    executor.scheduleExecution(new SimpleBinarySchedulableAppendCommand((AppendCommand)command, dout));
-                } else if (command instanceof ListCommand) {
-                    executor.scheduleExecution(new SimpleBinarySchedulableListCommand((ListCommand)command, dout));
-                } else if (command instanceof DeleteCommand) {
-                    executor.scheduleExecution(new SimpleBinarySchedulableDeleteCommand((DeleteCommand)command, dout));
-                } else if (command instanceof WriteCommand) {
-                    executor.scheduleExecution(new SimpleBinarySchedulableWriteCommand((WriteCommand)command, dout));
-                } else if (command instanceof CreateCommand) {
-                    executor.scheduleExecution(new SimpleBinarySchedulableCreateCommand((CreateCommand)command, dout));
-                } else if (command instanceof CopyCommand) {
-                    executor.scheduleExecution(new SimpleBinarySchedulableCopyCommand((CopyCommand)command, dout));
-                } else if (command instanceof MoveCommand) {
-                    executor.scheduleExecution(new SimpleBinarySchedulableMoveCommand((MoveCommand)command, dout));
-                } else if (command instanceof MkdirCommand) {
-                    executor.scheduleExecution(new SimpleBinarySchedulableMkdirCommand((MkdirCommand)command, dout));
-                } else if (SimpleBinaryHandler.this.executor instanceof ReplyingExecutor) {
-                    var replier = new SimpleBinaryHandlerReplier(dout);
-                    ((ReplyingExecutor)SimpleBinaryHandler.this.executor).scheduleExecution(command, replier);
-                } else {
-                    dout.close();
-                    throw new Exception("Cannot handle command");
-                }
-            } catch (Exception e) {
-                String stackTrace = ""; int i=0;
-                for (var st : e.getStackTrace()) {
-                    stackTrace += ++i + ") " + st.toString() + "\n";
-                }
-                System.err.println("Error occurred while handling command [" + command + "]: " + e + "\n|> stacktrace: " + stackTrace);
+        private SchedulableCommand makeSchedulable(Command command, DataOutputStream dout) throws Exception {
+            SchedulableCommand schedulable;
+            if (command instanceof ReadCommand) {
+                schedulable = new SimpleBinarySchedulableReadCommand((ReadCommand)command, dout);
+            } else if (command instanceof ExistsCommand) {
+                schedulable = new SimpleBinarySchedulableExistsCommand((ExistsCommand)command, dout);
+            } else if (command instanceof TruncateCommand) {
+                schedulable = new SimpleBinarySchedulableTruncateCommand((TruncateCommand)command, dout);
+            } else if (command instanceof CreateOrReplaceCommand) {
+                schedulable = new SimpleBinarySchedulableCreateOrReplaceCommand((CreateOrReplaceCommand)command, dout);
+            } else if (command instanceof AppendCommand) {
+                schedulable = new SimpleBinarySchedulableAppendCommand((AppendCommand)command, dout);
+            } else if (command instanceof ListCommand) {
+                schedulable = new SimpleBinarySchedulableListCommand((ListCommand)command, dout);
+            } else if (command instanceof DeleteCommand) {
+                schedulable = new SimpleBinarySchedulableDeleteCommand((DeleteCommand)command, dout);
+            } else if (command instanceof WriteCommand) {
+                schedulable = new SimpleBinarySchedulableWriteCommand((WriteCommand)command, dout);
+            } else if (command instanceof CreateCommand) {
+                schedulable = new SimpleBinarySchedulableCreateCommand((CreateCommand)command, dout);
+            } else if (command instanceof CopyCommand) {
+                schedulable = new SimpleBinarySchedulableCopyCommand((CopyCommand)command, dout);
+            } else if (command instanceof MoveCommand) {
+                schedulable = new SimpleBinarySchedulableMoveCommand((MoveCommand)command, dout);
+            } else if (command instanceof MkdirCommand) {
+                schedulable = new SimpleBinarySchedulableMkdirCommand((MkdirCommand)command, dout);
+            //} else if (SimpleBinaryHandler.this.executor instanceof ReplyingExecutor) {
+            //    var replier = new SimpleBinaryHandlerReplier(dout);
+            //    ((ReplyingExecutor)SimpleBinaryHandler.this.executor).scheduleExecution(command, replier);
+            } else {
+                dout.close();
+                throw new Exception("Cannot handle command");
             }
+            return schedulable;
         }
 
         @Override
@@ -97,6 +91,7 @@ public class SimpleBinaryHandler implements RequestHandler {
                     var din = new DataInputStream(in);
                     var dout = new DataOutputStream(out);
                     int version; Command command;
+                    SchedulableCommand schedulable;
 
                     try {
                         version = din.readInt();
@@ -104,22 +99,33 @@ public class SimpleBinaryHandler implements RequestHandler {
                         switch (version)
                         {
                             case 1:
-                                command = reveiveV1Command(din);
+                                {
+                                    command = reveiveV1Command(din);
+                                    schedulable = makeSchedulable(command, dout);
+                                }
                                 break;
                             default:
                                 throw new Exception("Unknown message version");
                         }
                     } catch (Exception e) {
-                        System.err.println("Error occurred while parising command: " + e);
+                        System.err.println("Error occurred while parsing command: " + e);
                         continue;
                     }
-                    scheduleCommand(command, dout);
+                    try {
+                        executor.scheduleExecution(schedulable);
+                    } catch (Exception e) {
+                        String stackTrace = ""; int i=0;
+                        for (var st : e.getStackTrace()) {
+                            stackTrace += ++i + ") " + st.toString() + "\n";
+                        }
+                        System.err.println("Error occurred while scheduling command [" + schedulable.toString() + "]: " + e.getMessage() + "\n|> stacktrace: " + stackTrace);
+                    }
                 }
             } catch (ClosedByInterruptException e) {
                 System.err.println("Listener interrupted!");
             } catch (Exception e) {
                 System.err.println("Listener failed to initialize " + e);
-            }   
+            }
         }
     }
 
@@ -280,7 +286,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         {
             throw new Exception("Malformed input!");
         }
-    
+
         var bytes = new byte[len];
         din.readFully(bytes);
         return bytes;
