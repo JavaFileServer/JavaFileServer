@@ -4,5 +4,5 @@ import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.handlers.RequestHandler;
 
 public interface Controller {
-    public void run(Executor executor, RequestHandler requestHandler);
+    public void run(Executor executor, RequestHandler requestHandler) throws Exception;
 }
