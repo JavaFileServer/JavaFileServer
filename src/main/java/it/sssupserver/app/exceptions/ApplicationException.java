@@ -5,15 +5,15 @@ package it.sssupserver.app.exceptions;
  * application errors.
  */
 public class ApplicationException extends Exception {
-    ApplicationException(String msg) {
+    public ApplicationException(String msg) {
         super(msg);
     }
 
-    ApplicationException(Throwable e) {
+    public ApplicationException(Throwable e) {
         super(e);
     }
 
-    ApplicationException(String msg, Throwable e) {
+    public ApplicationException(String msg, Throwable e) {
         super(msg, e);
     }
 }
