@@ -1,6 +1,10 @@
 package it.sssupserver.app.exceptions;
 
 public class InvalidIdentityException extends ApplicationException {
+    public InvalidIdentityException() {
+        super();
+    }
+
     public InvalidIdentityException(String msg) {
         super(msg);
     }

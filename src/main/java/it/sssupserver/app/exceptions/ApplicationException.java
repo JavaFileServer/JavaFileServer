@@ -5,6 +5,10 @@ package it.sssupserver.app.exceptions;
  * application errors.
  */
 public class ApplicationException extends Exception {
+    public ApplicationException() {
+        super();
+    }
+
     public ApplicationException(String msg) {
         super(msg);
     }
