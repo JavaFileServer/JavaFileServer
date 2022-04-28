@@ -2,7 +2,6 @@ package it.sssupserver.app.executors.samples;
 
 import java.nio.charset.StandardCharsets;
 
-import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.executors.ReplyingExecutor;
 import it.sssupserver.app.executors.SynchronousExecutor;
 import it.sssupserver.app.commands.AppendCommand;
