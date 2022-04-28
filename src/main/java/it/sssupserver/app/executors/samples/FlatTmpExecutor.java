@@ -8,7 +8,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.stream.Collector;
 
 import it.sssupserver.app.base.InvalidPathException;
 import it.sssupserver.app.base.Path;
