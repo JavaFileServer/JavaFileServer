@@ -23,10 +23,9 @@ import it.sssupserver.app.commands.schedulables.SchedulableMoveCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableReadCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableTruncateCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableWriteCommand;
-import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.executors.SynchronousExecutor;
 
-public class FlatTmpExecutor implements Executor, SynchronousExecutor {
+public class FlatTmpExecutor implements SynchronousExecutor {
     private String prefix = "JAVA-FILE-SERVER-";
     private java.nio.file.Path baseDir;
 
