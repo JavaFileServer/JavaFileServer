@@ -18,11 +18,6 @@ public interface Executor {
      */
     public void stop() throws Exception;
     /**
-     * Execute a single command.
-     * Blocking.
-     */
-    public void execute(SchedulableCommand command) throws Exception;
-    /**
      * Schedule command for execution.
      * May be asynchronous and non-blocking.
      */

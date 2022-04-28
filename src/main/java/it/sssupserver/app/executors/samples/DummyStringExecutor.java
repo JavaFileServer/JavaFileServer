@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.executors.ReplyingExecutor;
+import it.sssupserver.app.executors.SynchronousExecutor;
 import it.sssupserver.app.commands.AppendCommand;
 import it.sssupserver.app.commands.Command;
 import it.sssupserver.app.commands.CreateOrReplaceCommand;
@@ -22,7 +23,7 @@ import it.sssupserver.app.repliers.Replier;
  * This dummy executor own a single string
  * that treat as it was the content of a file 
  */
-public class DummyStringExecutor implements ReplyingExecutor {
+public class DummyStringExecutor implements ReplyingExecutor, SynchronousExecutor {
     private String content;
     public DummyStringExecutor(String data)
     {

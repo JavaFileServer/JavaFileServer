@@ -5,6 +5,7 @@ import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.SchedulableCommand;
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.executors.ReplyingExecutor;
+import it.sssupserver.app.executors.SynchronousExecutor;
 import it.sssupserver.app.base.*;
 
 import java.net.*;
@@ -267,8 +268,8 @@ public class SimpleBinaryHandler implements RequestHandler {
             }
             System.out.println("Command: " + command);
             System.out.println("Execute command...");
-            if (command instanceof ReadCommand) {
-                executor.execute(new SimpleBinarySchedulableReadCommand((ReadCommand)command, dout));
+            if (command instanceof ReadCommand && executor instanceof SynchronousExecutor) {
+                ((SynchronousExecutor)executor).execute(new SimpleBinarySchedulableReadCommand((ReadCommand)command, dout));
             } else if (SimpleBinaryHandler.this.executor instanceof ReplyingExecutor) {
                 ((ReplyingExecutor)executor).execute(command, new SimpleBinaryHandlerReplier(dout));
             } else {
