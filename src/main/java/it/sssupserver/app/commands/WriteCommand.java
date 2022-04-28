@@ -6,17 +6,29 @@ public class WriteCommand implements Command {
     private Path path;
     private int offset;
     private byte[] data;
+    private boolean sync;
 
     public WriteCommand(WriteCommand cmd)
     {
         this(cmd.getPath(), cmd.getData(), cmd.getOffset());
     }
 
-    public WriteCommand(Path path, byte[] data, int offset)
+    public WriteCommand(Path path, byte[] data, int offset, boolean sync)
     {
         this.path = path;
         this.data = data;
         this.offset = offset;
+        this.sync = sync;
+    }
+
+    public WriteCommand(Path path, byte[] data, int offset)
+    {
+        this(path, data, 0, false);
+    }
+
+    public WriteCommand(Path path, byte[] data, boolean sync)
+    {
+        this(path, data, 0, sync);
     }
 
     public WriteCommand(Path path, byte[] data)
@@ -47,6 +59,11 @@ public class WriteCommand implements Command {
     public byte[] getData()
     {
         return this.data;
+    }
+
+    public boolean requireSync()
+    {
+        return this.sync;
     }
 
     @Override
