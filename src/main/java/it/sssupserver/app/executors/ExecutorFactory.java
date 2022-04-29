@@ -7,6 +7,7 @@ public class ExecutorFactory {
     {
         //return new DummyStringExecutor();
         //return new DummyMapExecutor();
-        return new FlatTmpExecutor();
+        //return new FlatTmpExecutor();
+        return new UserTreeExecutor();
     }
 }
