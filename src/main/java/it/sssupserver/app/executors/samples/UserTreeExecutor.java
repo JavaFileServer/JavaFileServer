@@ -105,7 +105,7 @@ public class UserTreeExecutor implements Executor {
                 try {
                     var bytes = command.getData();
                     var buffer = ByteBuffer.wrap(bytes);
-                    fout.write(buffer);
+                    fout.truncate(0).write(buffer);
                     command.reply(true);
                 } catch (Exception e) {
                     //TODO: handle exception
