@@ -124,7 +124,25 @@ public class UserTreeExecutor implements Executor {
     private void handleTruncate(SchedulableTruncateCommand command) throws ApplicationException {
         var user = command.getUser();
         var uDir = userDir(user);
-        throw new ApplicationException("NOT IMPLEMENTED");
+        var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
+        pool.submit(() -> {
+            if (this.filemap.compute(path, (p, fout) -> {
+                try {
+                    if (fout == null) {
+                        fout = FileChannel.open(path,  StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE, StandardOpenOption.READ);
+                    } else {
+                        fout.truncate(0);
+                    }
+                } catch (IOException e) {
+                    try { command.reply(false); } catch (Exception ee) { }
+                    return null;
+                }
+                try { command.reply(true); } catch (Exception ee) { }
+                return fout;
+            }) == null) {
+                try { command.reply(false); } catch (Exception e) { }
+            }
+        });
     }
 
     private void handleExists(SchedulableExistsCommand command) throws ApplicationException {
