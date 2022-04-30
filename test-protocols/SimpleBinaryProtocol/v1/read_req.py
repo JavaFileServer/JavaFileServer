@@ -45,8 +45,7 @@ def recv_ans(sck):
         payload = sck.recv(length, socket.MSG_WAITALL)
         if len(payload) != length:
             raise Exception("Missing " + str(length -len(payload)) + " bytes")
-        text = payload.decode('utf-8')
-        print(text)
+        sys.stdout.buffer.write(payload)
 
     elif status == 1:
         # check padding
