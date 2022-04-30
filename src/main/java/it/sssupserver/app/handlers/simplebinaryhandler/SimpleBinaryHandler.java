@@ -9,6 +9,7 @@ import it.sssupserver.app.executors.SynchronousExecutor;
 import it.sssupserver.app.base.*;
 
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.charset.StandardCharsets;
@@ -326,7 +327,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         checkCategory(din);
         var path = readString(din);
         var data = readBytes(din);
-        var cmd = new CreateOrReplaceCommand(new Path(path), data);
+        var cmd = new CreateOrReplaceCommand(new Path(path), ByteBuffer.wrap(data));
         return cmd;
     }
 

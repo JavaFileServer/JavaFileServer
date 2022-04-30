@@ -71,7 +71,9 @@ public class DummyMapExecutor implements ReplyingExecutor, SynchronousExecutor {
     private void handleCreateOrReplace(CreateOrReplaceCommand command, Replier replier) throws Exception
     {
         var file = command.getPath().toString();
-        var bytes = command.getData();
+        var data = command.getData();
+        var bytes  = new byte[data.capacity()];
+        data.get(bytes);
         var charset = StandardCharsets.UTF_8;
         this.content.put(file, new String(bytes, charset));
         replier.replyCreateOrReplace(true);
@@ -80,7 +82,9 @@ public class DummyMapExecutor implements ReplyingExecutor, SynchronousExecutor {
     private void handleCreateOrReplace(SchedulableCreateOrReplaceCommand command) throws Exception
     {
         var file = command.getPath().toString();
-        var bytes = command.getData();
+        var data = command.getData();
+        var bytes  = new byte[data.capacity()];
+        data.get(bytes);
         var charset = StandardCharsets.UTF_8;
         this.content.put(file, new String(bytes, charset));
         command.reply(true);

@@ -91,8 +91,7 @@ public class FlatTmpExecutor implements SynchronousExecutor {
         var filePath = this.baseDir.resolve(filename);
         try (var fout = FileChannel.open(filePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             var bytes = command.getData();
-            var buffer = ByteBuffer.wrap(bytes);
-            fout.write(buffer);
+            fout.write(bytes);
             command.reply(true);
         } catch (Exception e) {
             command.reply(false);

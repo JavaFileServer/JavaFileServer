@@ -105,8 +105,7 @@ public class UserTreeExecutor implements Executor {
                 }
                 try {
                     var bytes = command.getData();
-                    var buffer = ByteBuffer.wrap(bytes);
-                    fout.truncate(0).write(buffer);
+                    fout.truncate(0).write(bytes);
                     if (command.requireSync()) {
                         fout.force(true);
                     }
