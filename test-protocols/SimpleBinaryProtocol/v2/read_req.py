@@ -43,17 +43,16 @@ def recv_ans(sck):
             raise Exception("Bad read")
         begin = int.from_bytes(d[:4], byteorder='big')
         length = int.from_bytes(d[4:], byteorder='big')
-        print("Data: (",begin,':',begin+length,')', sep='')
         payload = sck.recv(length, socket.MSG_WAITALL)
         if len(payload) != length:
             raise Exception("Missing " + str(length -len(payload)) + " bytes")
         text = payload.decode('utf-8')
-        print("Payload: ", "'"+text+"'")
+        print(text)
 
     elif status == 1:
         # check padding
         check_padding(sck, 2)
-        print("Error while reading file")
+        print("Error while reading file", file=sys.stderr)
     else:
         raise Exception("Bad status, found:", status)
 

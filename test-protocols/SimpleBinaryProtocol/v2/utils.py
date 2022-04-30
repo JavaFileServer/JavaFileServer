@@ -62,12 +62,9 @@ def read_string(sck):
     return S[0]
 
 def send_cmd(port, msg):
-    print("Connecting TCP socket to port", port)
     sck = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sck.connect(('localhost', port))
-    print("Sending data")
     sck.send(msg)
-    print("Data sent!")
     return sck
 
 def check_int(sck, length, val):
