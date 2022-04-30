@@ -37,10 +37,13 @@ def check_padding(sck, lenght):
     if padding != 0:
         raise Exception("Bad padding, found:", padding)
 
+def serialize_bytes(data):
+    l = len(data)
+    return l.to_bytes(4,byteorder='big')+data
+
 def serialize_string(string):
     b = bytes(string, "utf-8")
-    l = len(b)
-    return l.to_bytes(4,byteorder='big')+b
+    return serialize_bytes(b)
 
 def deserialize_string(byteseq):
     if len(byteseq) < 4:
