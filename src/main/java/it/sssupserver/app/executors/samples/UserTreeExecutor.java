@@ -246,7 +246,15 @@ public class UserTreeExecutor implements Executor {
     private void handleMkdir(SchedulableMkdirCommand command) throws ApplicationException {
         var user = command.getUser();
         var uDir = userDir(user);
-        throw new ApplicationException("NOT IMPLEMENTED");
+        var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
+        pool.submit(() -> {
+            try {
+                Files.createDirectory(path);
+                try { command.reply(true); } catch (Exception ee) { }
+            } catch (IOException e) {
+                try { command.reply(false); } catch (Exception ee) { }
+            }
+        });
     }
 
 
