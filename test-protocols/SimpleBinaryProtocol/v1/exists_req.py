@@ -57,11 +57,6 @@ port = 5050
 path = "file/base" if len(sys.argv) == 1 else sys.argv[1]
 
 if __name__ == "__main__":
-    print("Test WRITE request")
-    s = "Ciao panino al caffééé"
-    b = serialize_string(s)
-    print(s, '=>', b)
-    print('decoded: ', deserialize_string(b))
     cmd = serialize_exists_message(path)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)

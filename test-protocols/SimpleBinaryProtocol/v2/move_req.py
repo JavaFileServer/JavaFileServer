@@ -46,8 +46,6 @@ if __name__ == "__main__":
     username = sys.argv[1]
     src = sys.argv[2]
     dst = sys.argv[3]
-
-    print("Test COPY request")
     cmd = serialize_move_message(username, src, dst)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)

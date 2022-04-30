@@ -60,7 +60,6 @@ if __name__ == "__main__":
     username = sys.argv[1]
     path = "." if len(sys.argv) <= 2 else sys.argv[2]
 
-    print("Test LIST request")
     cmd = serialize_list_message(username, path)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)

@@ -48,9 +48,7 @@ port = 5050
 path = "." if len(sys.argv) == 1 else sys.argv[1]
 
 if __name__ == "__main__":
-    print("Test LIST request")
     cmd = serialize_list_message(path)
-    print("List MSG =>", cmd)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)
     #time.sleep(1)

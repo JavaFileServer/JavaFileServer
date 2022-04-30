@@ -48,8 +48,6 @@ if __name__ == "__main__":
     content = sys.argv[2]
     #path = "file/base" if len(sys.argv) <= 2 else sys.argv[2]
     #content = "Another NEW super beautiful message!" if len(sys.argv) == 1 else sys.argv[1]
-
-    print("Test CREATE OR REPLACE request")
     cmd = serialize_create_or_replace_message(path, content)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)

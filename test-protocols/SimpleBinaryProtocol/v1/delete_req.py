@@ -45,8 +45,6 @@ if __name__ == "__main__":
         usage(sys.argv[0])
 
     path = sys.argv[1]
-
-    print("Test DELETE request")
     cmd = serialize_delete_message(path)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)

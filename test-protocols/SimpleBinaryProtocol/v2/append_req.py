@@ -50,8 +50,6 @@ if __name__ == "__main__":
     username = sys.argv[1]
     path = sys.argv[2]
     content = sys.argv[3]
-
-    print("Test CREATE OR REPLACE request")
     cmd = serialize_append_message(username, path, content)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)

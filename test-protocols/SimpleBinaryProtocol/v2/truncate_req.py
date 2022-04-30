@@ -47,8 +47,6 @@ if __name__ == "__main__":
 
     username = sys.argv[1]
     path = sys.argv[2]
-
-    print("Test TRUNCATE request")
     cmd = serialize_truncate_message(username, path)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)

@@ -44,8 +44,6 @@ if __name__ == "__main__":
 
     src = sys.argv[1]
     dst = sys.argv[2]
-
-    print("Test COPY request")
     cmd = serialize_copy_message(src, dst)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)

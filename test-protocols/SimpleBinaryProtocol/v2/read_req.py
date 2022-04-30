@@ -81,7 +81,7 @@ if __name__ == "__main__":
     offset = 0 if len(sys.argv) <= 3 else int(sys.argv[3])
     length = 0 if len(sys.argv) <= 4 else int(sys.argv[4])
 
-    print("Test READ request")
+
     #s = "Ciao panino al caffééé"
     #b = serialize_string(s)
     #print(s, '=>', b)

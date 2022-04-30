@@ -48,7 +48,7 @@ if __name__ == "__main__":
     data = sys.argv[3]
     offset = 0 if len(sys.argv) <= 4 else int(sys.argv[4])
 
-    print("Test WRITE request")
+
     cmd = serialize_write_message(username, path, data, offset)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)
