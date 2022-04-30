@@ -100,7 +100,7 @@ public class UserTreeExecutor implements Executor {
             if (this.filemap.compute(path, (p, fout) -> {
                 if (fout == null) {
                     try {
-                        fout = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ);
+                        fout = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
                     } catch (Exception e) {
                         try { command.reply(false); } catch (Exception ee) { }
                         return null;
@@ -129,7 +129,7 @@ public class UserTreeExecutor implements Executor {
             if (this.filemap.compute(path, (p, fout) -> {
                 try {
                     if (fout == null) {
-                        fout = FileChannel.open(path,  StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE, StandardOpenOption.READ);
+                        fout = FileChannel.open(path,  StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
                     } else {
                         fout.truncate(0);
                     }
@@ -228,7 +228,7 @@ public class UserTreeExecutor implements Executor {
             if (this.filemap.computeIfAbsent(path, (p) -> {
                 FileChannel fout = null;
                 try {
-                    fout = FileChannel.open(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.READ);
+                    fout = FileChannel.open(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
                 } catch (IOException e) {
                     try { command.reply(false); } catch (Exception ee) { }
                     return null;
