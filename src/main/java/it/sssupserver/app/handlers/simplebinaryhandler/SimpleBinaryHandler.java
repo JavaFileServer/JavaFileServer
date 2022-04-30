@@ -152,7 +152,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         System.out.println("Worker terminated!");
     }
 
-    private Command reveiveV1Command(DataInputStream din) throws Exception
+    private static Command reveiveV1Command(DataInputStream din) throws Exception
     {
         short type;
         type = din.readShort();
@@ -279,7 +279,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         }
     }
 
-    private byte[] readBytes(DataInputStream din) throws Exception
+    private static byte[] readBytes(DataInputStream din) throws Exception
     {
         var len = din.readInt();
         if (len < 0)
@@ -292,7 +292,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         return bytes;
     }
 
-    private String readString(DataInputStream din) throws Exception
+    private static String readString(DataInputStream din) throws Exception
     {
         var bytes = readBytes(din);
         var recover = new String(bytes, StandardCharsets.UTF_8);
@@ -311,112 +311,112 @@ public class SimpleBinaryHandler implements RequestHandler {
         return bytes.toByteArray();
     }
 
-    private ReadCommand parseV1ReadCommand(DataInputStream din) throws Exception
+    private static ReadCommand parseV1ReadCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
-        String path = this.readString(din);
+        String path = readString(din);
         int begin = din.readInt();
         int len = din.readInt();
         var cmd = new ReadCommand(new Path(path), begin, len);
         return cmd;
     }
 
-    private CreateOrReplaceCommand parseV1CreateOrReplaceCommand(DataInputStream din) throws Exception
+    private static CreateOrReplaceCommand parseV1CreateOrReplaceCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
-        var path = this.readString(din);
+        var path = readString(din);
         var data = readBytes(din);
         var cmd = new CreateOrReplaceCommand(new Path(path), data);
         return cmd;
     }
 
-    private AppendCommand parseV1Append(DataInputStream din) throws Exception
+    private static AppendCommand parseV1Append(DataInputStream din) throws Exception
     {
         checkCategory(din);
-        var path = this.readString(din);
+        var path = readString(din);
         var data = readBytes(din);
         var cmd = new AppendCommand(new Path(path), data);
         return cmd;
     }
 
-    private ExistsCommand parseV1ExistsCommand(DataInputStream din) throws Exception
+    private static ExistsCommand parseV1ExistsCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
-        var path = this.readString(din);
+        var path = readString(din);
         var cmd = new ExistsCommand(new Path(path));
         return cmd;
     }
 
-    private TruncateCommand parseV1TruncateCommand(DataInputStream din) throws Exception
+    private static TruncateCommand parseV1TruncateCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
-        var path = this.readString(din);
+        var path = readString(din);
         var cmd = new TruncateCommand(new Path(path));
         return cmd;
     }
 
-    private DeleteCommand parseV1DeleteCommand(DataInputStream din) throws Exception
+    private static DeleteCommand parseV1DeleteCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
-        var path = this.readString(din);
+        var path = readString(din);
         var cmd = new DeleteCommand(new Path(path));
         return cmd;
     }
 
-    private ListCommand parseV1ListCommand(DataInputStream din) throws Exception
+    private static ListCommand parseV1ListCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
-        var path = this.readString(din);
+        var path = readString(din);
         var cmd = new ListCommand(new Path(path));
         return cmd;
     }
 
-    private WriteCommand parseV1WriteCommand(DataInputStream din) throws Exception
+    private static WriteCommand parseV1WriteCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
-        var path = this.readString(din);
+        var path = readString(din);
         var offset = din.readInt();
         var data = readBytes(din);
         var cmd = new WriteCommand(new Path(path), data, offset);
         return cmd;
     }
 
-    private CreateCommand parseV1CreateCommand(DataInputStream din) throws Exception
+    private static CreateCommand parseV1CreateCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
-        var path = this.readString(din);
+        var path = readString(din);
         var data = readBytes(din);
         var cmd = new CreateCommand(new Path(path), data);
         return cmd;
     }
 
-    private CopyCommand parseV1CopyCommand(DataInputStream din) throws Exception
+    private static CopyCommand parseV1CopyCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
-        var src = this.readString(din);
-        var dst = this.readString(din);
+        var src = readString(din);
+        var dst = readString(din);
         var cmd = new CopyCommand(new Path(src), new Path(dst));
         return cmd;
     }
 
-    private MoveCommand parseV1MoveCommand(DataInputStream din) throws Exception
+    private static MoveCommand parseV1MoveCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
-        var src = this.readString(din);
-        var dst = this.readString(din);
+        var src = readString(din);
+        var dst = readString(din);
         var cmd = new MoveCommand(new Path(src), new Path(dst));
         return cmd;
     }
 
-    private MkdirCommand parseV1MkdirCommand(DataInputStream din) throws Exception
+    private static MkdirCommand parseV1MkdirCommand(DataInputStream din) throws Exception
     {
         checkCategory(din);
-        var path = this.readString(din);
+        var path = readString(din);
         var cmd = new MkdirCommand(new Path(path));
         return cmd;
     }
 
-    private void checkCategory(DataInputStream din) throws Exception
+    private static void checkCategory(DataInputStream din) throws Exception
     {
         short category = din.readShort();
         if (category != 0) {
