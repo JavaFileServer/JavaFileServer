@@ -236,8 +236,7 @@ public class UserTreeExecutor implements Executor {
         pool.submit(() -> {
             if (this.filemap.computeIfPresent(path, (p, fout) -> {
                 try {
-                    var bytes = command.getData();
-                    var buffer = ByteBuffer.wrap(bytes);
+                    var buffer = command.getData();
                     fout.position(command.getOffset()).write(buffer);
                     if (command.requireSync()) {
                         fout.force(true);
@@ -267,8 +266,7 @@ public class UserTreeExecutor implements Executor {
                     return null;
                 }
                 try {
-                    var bytes = command.getData();
-                    var buffer = ByteBuffer.wrap(bytes);
+                    var buffer = command.getData();
                     fout.write(buffer);
                     if (command.requireSync()) {
                         fout.force(true);

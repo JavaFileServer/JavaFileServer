@@ -1,11 +1,13 @@
 package it.sssupserver.app.commands;
 
+import java.nio.ByteBuffer;
+
 import it.sssupserver.app.base.*;
 
 public class WriteCommand implements Command {
     private Path path;
     private int offset;
-    private byte[] data;
+    private ByteBuffer data;
     private boolean sync;
 
     public WriteCommand(WriteCommand cmd)
@@ -13,7 +15,7 @@ public class WriteCommand implements Command {
         this(cmd.getPath(), cmd.getData(), cmd.getOffset());
     }
 
-    public WriteCommand(Path path, byte[] data, int offset, boolean sync)
+    public WriteCommand(Path path, ByteBuffer data, int offset, boolean sync)
     {
         this.path = path;
         this.data = data;
@@ -21,17 +23,17 @@ public class WriteCommand implements Command {
         this.sync = sync;
     }
 
-    public WriteCommand(Path path, byte[] data, int offset)
+    public WriteCommand(Path path, ByteBuffer data, int offset)
     {
         this(path, data, 0, false);
     }
 
-    public WriteCommand(Path path, byte[] data, boolean sync)
+    public WriteCommand(Path path, ByteBuffer data, boolean sync)
     {
         this(path, data, 0, sync);
     }
 
-    public WriteCommand(Path path, byte[] data)
+    public WriteCommand(Path path, ByteBuffer data)
     {
         this(path, data, 0);
     }
@@ -53,10 +55,10 @@ public class WriteCommand implements Command {
 
     public int getLen()
     {
-        return this.data.length;
+        return this.data.limit() - this.data.position();
     }
 
-    public byte[] getData()
+    public ByteBuffer getData()
     {
         return this.data;
     }

@@ -378,7 +378,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         var path = readString(din);
         var offset = din.readInt();
         var data = readBytes(din);
-        var cmd = new WriteCommand(new Path(path), data, offset);
+        var cmd = new WriteCommand(new Path(path), ByteBuffer.wrap(data), offset);
         return cmd;
     }
 
@@ -387,7 +387,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         checkCategory(din);
         var path = readString(din);
         var data = readBytes(din);
-        var cmd = new CreateCommand(new Path(path), data);
+        var cmd = new CreateCommand(new Path(path), ByteBuffer.wrap(data));
         return cmd;
     }
 

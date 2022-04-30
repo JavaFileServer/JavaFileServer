@@ -1,10 +1,12 @@
 package it.sssupserver.app.commands;
 
+import java.nio.ByteBuffer;
+
 import it.sssupserver.app.base.Path;
 
 public class CreateCommand implements Command {
     private Path path;
-    byte[] data;
+    ByteBuffer data;
     private boolean sync;
 
     public CreateCommand(CreateCommand cmd)
@@ -12,14 +14,14 @@ public class CreateCommand implements Command {
         this(cmd.getPath(), cmd.getData(), cmd.requireSync());
     }
 
-    public CreateCommand(Path path, byte[] data, boolean sync)
+    public CreateCommand(Path path, ByteBuffer data, boolean sync)
     {
         this.path = path;
         this.data = data;
         this.sync = sync;
     }
 
-    public CreateCommand(Path path, byte[] data)
+    public CreateCommand(Path path, ByteBuffer data)
     {
         this(path, data, false);
     }
@@ -34,7 +36,7 @@ public class CreateCommand implements Command {
         return this.path;
     }
 
-    public byte[] getData()
+    public ByteBuffer getData()
     {
         return this.data;
     }
