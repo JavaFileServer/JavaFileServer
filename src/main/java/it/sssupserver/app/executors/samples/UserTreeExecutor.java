@@ -303,7 +303,42 @@ public class UserTreeExecutor implements Executor {
     private void handleMove(SchedulableMoveCommand command) throws ApplicationException {
         var user = command.getUser();
         var uDir = userDir(user);
-        throw new ApplicationException("NOT IMPLEMENTED");
+        var srcPath = java.nio.file.Path.of(uDir.toString(), command.getSource().getPath());
+        var dstPath = java.nio.file.Path.of(uDir.toString(), command.getDestination().getPath());
+        pool.submit(() -> {
+            if (Files.isDirectory(dstPath)) {
+                try {
+                    Files.move(srcPath, dstPath);
+                    this.filemap.replaceAll((p, fc) -> {
+                        if (p.startsWith(dstPath)) {
+                            try { fc.close(); } catch (Exception ee) { }
+                            return null;
+                        } else {
+                            return fc;
+                        }
+                    });
+                    try { command.reply(true); } catch (Exception ee) { }
+                } catch (IOException e) {
+                    try { command.reply(false); } catch (Exception ee) { }
+                }
+            } else if (this.filemap.computeIfAbsent(dstPath, (dst) -> {
+                this.filemap.compute(srcPath, (src, fout) -> {
+                    if (fout != null) {
+                        try { fout.close(); } catch (IOException ee) { }
+                    }
+                    try {
+                        Files.move(srcPath, dstPath);
+                        try { command.reply(true); } catch (Exception ee) { }
+                    } catch (IOException e) {
+                        try { command.reply(false); } catch (Exception ee) { }
+                    }
+                    return null;
+                });
+                return null;
+            }) == null) {
+                try { command.reply(false); } catch (Exception ee) { }
+            }
+        });
     }
 
     private void handleMkdir(SchedulableMkdirCommand command) throws ApplicationException {
