@@ -35,8 +35,8 @@ def recv_ans(sck):
     print("File deleted: ", success == 1)
 
 def usage(comm):
-    print("Usage:")
-    print("\t", comm, "username", "path")
+    print("Usage:", file=sys.stderr)
+    print("\t", comm, "username", "path", file=sys.stderr)
     exit(1)
 
 port = 5050
@@ -50,7 +50,6 @@ if __name__ == "__main__":
 
     print("Test DELETE request")
     cmd = serialize_delete_message(username, path)
-    print("Delete MSG =>", cmd)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)
     #time.sleep(1)

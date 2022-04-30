@@ -34,8 +34,8 @@ def recv_ans(sck):
 port = 5050
 
 def usage(comm):
-    print("Usage:")
-    print("\t", comm, "src-path", "dst-path")
+    print("Usage:", file=sys.stderr)
+    print("\t", comm, "src-path", "dst-path", file=sys.stderr)
     exit(1)
 
 if __name__ == "__main__":
@@ -47,8 +47,6 @@ if __name__ == "__main__":
 
     print("Test COPY request")
     cmd = serialize_move_message(src, dst)
-
-    print("Copy MSG =>", cmd)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)
     #time.sleep(1)

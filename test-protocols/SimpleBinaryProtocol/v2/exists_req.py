@@ -37,8 +37,8 @@ def recv_ans(sck):
 port = 5050
 
 def usage(comm):
-    print("Usage:")
-    print("\t", comm, "username", "[path]")
+    print("Usage:", file=sys.stderr)
+    print("\t", comm, "username", "[path]", file=sys.stderr)
     exit(1)
 
 

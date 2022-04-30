@@ -30,8 +30,8 @@ def recv_ans(sck):
     print("Status =", status == 1)
 
 def usage(comm):
-    print("Usage:")
-    print("\t", comm, "path", "data")
+    print("Usage:", file=sys.stderr)
+    print("\t", comm, "path", "data", file=sys.stderr)
     exit(1)
 
 if __name__ == "__main__":

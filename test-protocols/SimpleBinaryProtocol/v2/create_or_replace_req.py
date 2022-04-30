@@ -36,8 +36,8 @@ def recv_ans(sck):
     print("File successfully updated!")
 
 def usage(comm):
-    print("Usage:")
-    print("\t", comm, "username", "path", "data")
+    print("Usage:", file=sys.stderr)
+    print("\t", comm, "username", "path", "data", file=sys.stderr)
     exit(1)
 
 if __name__ == "__main__":
@@ -53,7 +53,6 @@ if __name__ == "__main__":
     #content = "Another NEW super beautiful message!" if len(sys.argv) == 1 else sys.argv[1]
 
     print("Test CREATE OR REPLACE request")
-    print("Message that will be uploaded!")
     cmd = serialize_create_or_replace_message(username, path, content)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)

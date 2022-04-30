@@ -66,8 +66,8 @@ def recv_ans(sck):
 port = 5050
 
 def usage(comm):
-    print("Usage:")
-    print("\t", comm, "path", "[offset]", "[length]")
+    print("Usage:", file=sys.stderr)
+    print("\t", comm, "path", "[offset]", "[length]", file=sys.stderr)
     exit(1)
 
 if __name__ == "__main__":

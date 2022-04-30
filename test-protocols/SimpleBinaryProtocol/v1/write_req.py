@@ -33,8 +33,8 @@ def recv_ans(sck):
     print("Result of write operation:", success == 1)
 
 def usage(comm):
-    print("Usage:")
-    print("\t", comm, "path", "data", "[offset]")
+    print("Usage:", file=sys.stderr)
+    print("\t", comm, "path", "data", "[offset]", file=sys.stderr)
     exit(1)
 
 if __name__ == "__main__":

@@ -36,8 +36,8 @@ def recv_ans(sck):
 port = 5050
 
 def usage(comm):
-    print("Usage:")
-    print("\t", comm, "path")
+    print("Usage:", file=sys.stderr)
+    print("\t", comm, "path", file=sys.stderr)
     exit(1)
 
 
@@ -49,7 +49,6 @@ if __name__ == "__main__":
 
     print("Test MKDIR request")
     cmd = serialize_mkdir_message(path)
-    print("Mkdir MSG =>", cmd)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)
     #time.sleep(1)
