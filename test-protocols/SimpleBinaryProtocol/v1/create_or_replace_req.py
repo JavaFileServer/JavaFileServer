@@ -17,7 +17,6 @@ def serialize_create_or_replace_message(path, content):
         serialize_string(content)
 
 def recv_ans(sck):
-    print("Receving response from socket")
     # message version
     check_version(sck, 1)
     # message type
@@ -53,7 +52,6 @@ if __name__ == "__main__":
     print("Test CREATE OR REPLACE request")
     print("Message that will be uploaded!")
     cmd = serialize_create_or_replace_message(path, content)
-    print("Write MSG =>", cmd)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)
     #time.sleep(1)

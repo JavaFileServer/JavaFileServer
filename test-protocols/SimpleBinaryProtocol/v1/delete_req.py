@@ -18,7 +18,6 @@ def serialize_delete_message(path):
 
 
 def recv_ans(sck):
-    print("Receving response from socket")
     # message version
     check_version(sck, 1)
     # message type

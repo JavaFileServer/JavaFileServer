@@ -20,7 +20,6 @@ def serialize_move_message(username, source, destination):
 
 
 def recv_ans(sck):
-    print("Receving response from socket")
     # message version
     check_version(sck, 2)
     # message type

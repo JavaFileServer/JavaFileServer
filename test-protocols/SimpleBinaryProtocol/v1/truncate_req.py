@@ -18,7 +18,6 @@ def serialize_truncate_message(path):
 
 
 def recv_ans(sck):
-    print("Receving response from socket")
     # message version
     check_version(sck, 1)
     # message type
@@ -49,7 +48,6 @@ if __name__ == "__main__":
 
     print("Test TRUNCATE request")
     cmd = serialize_truncate_message(path)
-    print("Write MSG =>", cmd)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)
     #time.sleep(1)

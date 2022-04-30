@@ -17,7 +17,6 @@ def serialize_create_message(path, content):
         serialize_string(content)
 
 def recv_ans(sck):
-    print("Receving response from socket")
     # message version
     check_version(sck, 1)
     # message type
@@ -45,10 +44,8 @@ if __name__ == "__main__":
     #path = "file/base" if len(sys.argv) <= 2 else sys.argv[2]
     #content = "Another NEW super beautiful message!" if len(sys.argv) == 1 else sys.argv[1]
 
-    print("Test CREATE request")
-    print("Message that will be uploaded!")
+    print("Send CREATE request")
     cmd = serialize_create_message(path, content)
-    print("Create MSG =>", cmd)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)
     #time.sleep(1)

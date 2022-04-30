@@ -21,7 +21,6 @@ def serialize_write_message(username, path, data, offset = 0):
 
 
 def recv_ans(sck):
-    print("Receving response from socket")
     # message version
     check_version(sck, 2)
     # message type
@@ -51,7 +50,6 @@ if __name__ == "__main__":
 
     print("Test WRITE request")
     cmd = serialize_write_message(username, path, data, offset)
-    print("Write MSG =>", cmd)
     sck = send_cmd(port, cmd)
     sck.settimeout(1)
     #time.sleep(1)

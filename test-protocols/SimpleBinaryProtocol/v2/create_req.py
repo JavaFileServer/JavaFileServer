@@ -18,7 +18,6 @@ def serialize_create_message(username, path, content):
         serialize_string(content)
 
 def recv_ans(sck):
-    print("Receving response from socket")
     # message version
     check_version(sck, 2)
     # message type
