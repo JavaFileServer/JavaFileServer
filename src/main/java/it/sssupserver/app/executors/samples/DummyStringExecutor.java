@@ -59,7 +59,7 @@ public class DummyStringExecutor implements ReplyingExecutor, SynchronousExecuto
     private void handleCreateOrReplace(CreateOrReplaceCommand command, Replier replier) throws Exception
     {
         var data = command.getData();
-        var bytes  = new byte[data.capacity()];
+        var bytes  = new byte[data.limit()];
         data.get(bytes);
         var charset = StandardCharsets.UTF_8;
         this.content = new String(bytes, charset);
@@ -69,7 +69,7 @@ public class DummyStringExecutor implements ReplyingExecutor, SynchronousExecuto
     private void handleCreateOrReplace(SchedulableCreateOrReplaceCommand command) throws Exception
     {
         var data = command.getData();
-        var bytes  = new byte[data.capacity()];
+        var bytes  = new byte[data.limit()];
         data.get(bytes);
         var charset = StandardCharsets.UTF_8;
         this.content = new String(bytes, charset);
@@ -78,7 +78,9 @@ public class DummyStringExecutor implements ReplyingExecutor, SynchronousExecuto
 
     private void handleAppend(AppendCommand command, Replier replier) throws Exception
     {
-        var bytes = command.getData();
+        var data = command.getData();
+        var bytes  = new byte[data.limit()];
+        data.get(bytes);
         var charset = StandardCharsets.UTF_8;
         this.content += new String(bytes, charset);
         replier.replyAppend(true);
@@ -86,7 +88,9 @@ public class DummyStringExecutor implements ReplyingExecutor, SynchronousExecuto
 
     private void handleAppend(SchedulableAppendCommand command) throws Exception
     {
-        var bytes = command.getData();
+        var data = command.getData();
+        var bytes  = new byte[data.limit()];
+        data.get(bytes);
         var charset = StandardCharsets.UTF_8;
         this.content += new String(bytes, charset);
         command.reply(true);

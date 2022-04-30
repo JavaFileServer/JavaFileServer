@@ -191,8 +191,7 @@ public class UserTreeExecutor implements Executor {
         pool.submit(() -> {
             if (this.filemap.computeIfPresent(path, (p, fout) -> {
                 try {
-                    var bytes = command.getData();
-                    var buffer = ByteBuffer.wrap(bytes);
+                    var buffer = command.getData();
                     fout.position(fout.size()).write(buffer);
                     if (command.requireSync()) {
                         fout.force(true);

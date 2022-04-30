@@ -72,7 +72,7 @@ public class DummyMapExecutor implements ReplyingExecutor, SynchronousExecutor {
     {
         var file = command.getPath().toString();
         var data = command.getData();
-        var bytes  = new byte[data.capacity()];
+        var bytes  = new byte[data.limit()];
         data.get(bytes);
         var charset = StandardCharsets.UTF_8;
         this.content.put(file, new String(bytes, charset));
@@ -83,7 +83,7 @@ public class DummyMapExecutor implements ReplyingExecutor, SynchronousExecutor {
     {
         var file = command.getPath().toString();
         var data = command.getData();
-        var bytes  = new byte[data.capacity()];
+        var bytes  = new byte[data.limit()];
         data.get(bytes);
         var charset = StandardCharsets.UTF_8;
         this.content.put(file, new String(bytes, charset));
@@ -92,7 +92,9 @@ public class DummyMapExecutor implements ReplyingExecutor, SynchronousExecutor {
 
     private void handleAppend(AppendCommand command, Replier replier) throws Exception
     {
-        var bytes = command.getData();
+        var data = command.getData();
+        var bytes  = new byte[data.limit()];
+        data.get(bytes);
         var charset = StandardCharsets.UTF_8;
         var file = command.getPath().toString();
         var ans = this.content.computeIfPresent(file, (BiFunction<String,String,String>)(String K, String V) -> {
@@ -103,7 +105,9 @@ public class DummyMapExecutor implements ReplyingExecutor, SynchronousExecutor {
 
     private void handleAppend(SchedulableAppendCommand command) throws Exception
     {
-        var bytes = command.getData();
+        var data = command.getData();
+        var bytes  = new byte[data.limit()];
+        data.get(bytes);
         var charset = StandardCharsets.UTF_8;
         var file = command.getPath().toString();
         var ans = this.content.computeIfPresent(file, (BiFunction<String,String,String>)(String K, String V) -> {
