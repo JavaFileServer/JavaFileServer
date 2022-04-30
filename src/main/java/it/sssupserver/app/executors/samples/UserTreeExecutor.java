@@ -173,7 +173,22 @@ public class UserTreeExecutor implements Executor {
     private void handleAppend(SchedulableAppendCommand command) throws ApplicationException {
         var user = command.getUser();
         var uDir = userDir(user);
-        throw new ApplicationException("NOT IMPLEMENTED");
+        var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
+        pool.submit(() -> {
+            if (this.filemap.computeIfPresent(path, (p, fout) -> {
+                try {
+                    var bytes = command.getData();
+                    var buffer = ByteBuffer.wrap(bytes);
+                    fout.position(fout.size()).write(buffer);
+                    try { command.reply(true); } catch (Exception ee) { }
+                } catch (IOException e) {
+                    try { command.reply(false); } catch (Exception ee) { }
+                }
+                return fout;
+            }) == null) {
+                try { command.reply(false); } catch (Exception e) { }
+            }
+        });
     }
 
     private void handleList(SchedulableListCommand command) throws ApplicationException {
