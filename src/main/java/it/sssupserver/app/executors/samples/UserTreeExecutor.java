@@ -6,11 +6,14 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.StandardOpenOption;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
 import it.sssupserver.app.exceptions.ApplicationException;
@@ -194,7 +197,21 @@ public class UserTreeExecutor implements Executor {
     private void handleList(SchedulableListCommand command) throws ApplicationException {
         var user = command.getUser();
         var uDir = userDir(user);
-        throw new ApplicationException("NOT IMPLEMENTED");
+        var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
+        pool.submit(() -> {
+            Collection<Path> items = new LinkedList<>();
+            try (var dirContent = Files.newDirectoryStream(path)) {
+                for (var entry : dirContent) {
+                    var r = this.baseDir.relativize(entry);
+                    var e = r.toString();
+                    var p = new Path(e);
+                    items.add(p);
+                }
+                try { command.reply(items); } catch (Exception ee) { }
+            } catch (Exception e) {
+                try { command.notFound(); } catch (Exception ee) { }
+            }
+        });
     }
 
     private void handleWrite(SchedulableWriteCommand command) throws ApplicationException {
