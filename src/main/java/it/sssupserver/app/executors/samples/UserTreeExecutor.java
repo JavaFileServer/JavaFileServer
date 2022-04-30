@@ -206,7 +206,29 @@ public class UserTreeExecutor implements Executor {
     private void handleCreate(SchedulableCreateCommand command) throws ApplicationException {
         var user = command.getUser();
         var uDir = userDir(user);
-        throw new ApplicationException("NOT IMPLEMENTED");
+        var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
+        pool.submit(() -> {
+            if (this.filemap.computeIfAbsent(path, (p) -> {
+                FileChannel fout = null;
+                try {
+                    fout = FileChannel.open(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.READ);
+                } catch (IOException e) {
+                    try { command.reply(false); } catch (Exception ee) { }
+                    return null;
+                }
+                try {
+                    var bytes = command.getData();
+                    var buffer = ByteBuffer.wrap(bytes);
+                    fout.truncate(0).write(buffer);
+                    try { command.reply(true); } catch (Exception ee) { }
+                } catch (Exception e) {
+                    try { command.reply(false); } catch (Exception ee) { }
+                }
+                return fout;
+            }) == null) {
+                try { command.reply(false); } catch (Exception e) { }
+            }
+        });
     }
 
     private void handleCopy(SchedulableCopyCommand command) throws ApplicationException {
