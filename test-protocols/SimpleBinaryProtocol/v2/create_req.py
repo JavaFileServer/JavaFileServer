@@ -15,7 +15,7 @@ def serialize_create_message(username, path, content):
         cmd.to_bytes(2,byteorder='big')+\
         category.to_bytes(2,byteorder='big')+\
         serialize_string(path)+\
-        serialize_string(content)
+        serialize_bytes(content)
 
 def recv_ans(sck):
     # message version
@@ -32,7 +32,8 @@ def recv_ans(sck):
 
 def usage(comm):
     print("Usage:", file=sys.stderr)
-    print("\t", comm, "username", "path", "data", file=sys.stderr)
+    print("\t", comm, "username", "path", "[data]", file=sys.stderr)
+    print("\tdata: is read from STDIN if not provided", file=sys.stderr)
     exit(1)
 
 if __name__ == "__main__":
@@ -42,7 +43,7 @@ if __name__ == "__main__":
     port = 5050
     username = sys.argv[1]
     path = sys.argv[2]
-    content = sys.argv[3]
+    content = bytes(sys.argv[3], "utf-8") if len(sys.argv) == 4 else sys.stdin.buffer.read()
     #path = "file/base" if len(sys.argv) <= 2 else sys.argv[2]
     #content = "Another NEW super beautiful message!" if len(sys.argv) == 1 else sys.argv[1]
     cmd = serialize_create_message(username, path, content)
