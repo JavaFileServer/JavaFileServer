@@ -99,6 +99,7 @@ public class UserTreeExecutor implements Executor {
                     try {
                         fout = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ);
                     } catch (Exception e) {
+                        try { command.reply(false); } catch (Exception ee) { }
                         return null;
                     }
                 }
@@ -106,17 +107,13 @@ public class UserTreeExecutor implements Executor {
                     var bytes = command.getData();
                     var buffer = ByteBuffer.wrap(bytes);
                     fout.truncate(0).write(buffer);
-                    command.reply(true);
+                    try { command.reply(true); } catch (Exception ee) { }
                 } catch (Exception e) {
-                    //TODO: handle exception
+                    try { command.reply(false); } catch (Exception ee) { }
                 }
                 return fout;
             }) == null) {
-                try {
-                    command.reply(false);
-                } catch (Exception e) {
-                    //TODO: handle exception
-                }
+                try { command.reply(false); } catch (Exception e) { }
             }
         });
     }
