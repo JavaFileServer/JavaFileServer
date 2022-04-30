@@ -107,6 +107,9 @@ public class UserTreeExecutor implements Executor {
                     var bytes = command.getData();
                     var buffer = ByteBuffer.wrap(bytes);
                     fout.truncate(0).write(buffer);
+                    if (command.requireSync()) {
+                        fout.force(true);
+                    }
                     try { command.reply(true); } catch (Exception ee) { }
                 } catch (Exception e) {
                     try { command.reply(false); } catch (Exception ee) { }
@@ -192,6 +195,9 @@ public class UserTreeExecutor implements Executor {
                     var bytes = command.getData();
                     var buffer = ByteBuffer.wrap(bytes);
                     fout.position(fout.size()).write(buffer);
+                    if (command.requireSync()) {
+                        fout.force(true);
+                    }
                     try { command.reply(true); } catch (Exception ee) { }
                 } catch (IOException e) {
                     try { command.reply(false); } catch (Exception ee) { }
@@ -235,6 +241,9 @@ public class UserTreeExecutor implements Executor {
                     var bytes = command.getData();
                     var buffer = ByteBuffer.wrap(bytes);
                     fout.position(command.getOffset()).write(buffer);
+                    if (command.requireSync()) {
+                        fout.force(true);
+                    }
                     try { command.reply(true); } catch (Exception ee) { }
                 } catch (IOException e) {
                     try { command.reply(false); } catch (Exception ee) { }
@@ -263,6 +272,9 @@ public class UserTreeExecutor implements Executor {
                     var bytes = command.getData();
                     var buffer = ByteBuffer.wrap(bytes);
                     fout.write(buffer);
+                    if (command.requireSync()) {
+                        fout.force(true);
+                    }
                     try { command.reply(true); } catch (Exception ee) { }
                 } catch (Exception e) {
                     try { command.reply(false); } catch (Exception ee) { }
