@@ -77,17 +77,14 @@ public class UserTreeExecutor implements Executor {
                     var bytes = new byte[toRead];
                     var buffer = ByteBuffer.wrap(bytes);
                     fin.read(buffer, command.getBegin());
-                    command.reply(bytes);
+                    try { command.reply(bytes); } catch (Exception ee) { }
                 } catch (Exception e) {
-                    //TODO: handle exception
+                    try { fin.close(); } catch (Exception ee) { }
+                    return null;
                 }
                 return fin;
             }) == null) {
-                try {
-                    command.notFound();
-                } catch (Exception e) {
-                    //TODO: handle exception
-                }
+                try { command.notFound(); } catch (Exception ee) { }
             }
         });
     }
@@ -113,6 +110,8 @@ public class UserTreeExecutor implements Executor {
                     try { command.reply(true); } catch (Exception ee) { }
                 } catch (Exception e) {
                     try { command.reply(false); } catch (Exception ee) { }
+                    try { fout.close(); } catch (Exception ee) { }
+                    return null;
                 }
                 return fout;
             }) == null) {
@@ -135,6 +134,7 @@ public class UserTreeExecutor implements Executor {
                     }
                 } catch (IOException e) {
                     try { command.reply(false); } catch (Exception ee) { }
+                    try { fout.close(); } catch (Exception ee) { }
                     return null;
                 }
                 try { command.reply(true); } catch (Exception ee) { }
@@ -186,6 +186,8 @@ public class UserTreeExecutor implements Executor {
                     try { command.reply(true); } catch (Exception ee) { }
                 } catch (IOException e) {
                     try { command.reply(false); } catch (Exception ee) { }
+                    try { fout.close(); } catch (Exception ee) { }
+                    return null;
                 }
                 return fout;
             }) == null) {
