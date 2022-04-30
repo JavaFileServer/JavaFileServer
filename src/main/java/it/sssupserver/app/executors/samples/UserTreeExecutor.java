@@ -151,7 +151,23 @@ public class UserTreeExecutor implements Executor {
     private void handleDelete(SchedulableDeleteCommand command) throws ApplicationException {
         var user = command.getUser();
         var uDir = userDir(user);
-        throw new ApplicationException("NOT IMPLEMENTED");
+        var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
+        pool.submit(() -> {
+            if (this.filemap.compute(path, (p, fout) -> {
+                try {
+                    if (fout != null) {
+                        fout.close();
+                    }
+                    var success = Files.deleteIfExists(path);
+                    try { command.reply(success); } catch (Exception ee) { }
+                } catch (IOException e) {
+                    try { command.reply(false); } catch (Exception ee) { }
+                }
+                return null;
+            }) == null) {
+                try { command.reply(false); } catch (Exception e) { }
+            }
+        });
     }
 
     private void handleAppend(SchedulableAppendCommand command) throws ApplicationException {
