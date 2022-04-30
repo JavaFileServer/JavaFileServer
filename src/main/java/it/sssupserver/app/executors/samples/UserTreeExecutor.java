@@ -213,7 +213,7 @@ public class UserTreeExecutor implements Executor {
             Collection<Path> items = new LinkedList<>();
             try (var dirContent = Files.newDirectoryStream(path)) {
                 for (var entry : dirContent) {
-                    var r = this.baseDir.relativize(entry);
+                    var r = uDir.relativize(entry);
                     var e = r.toString();
                     var p = new Path(e);
                     items.add(p);
