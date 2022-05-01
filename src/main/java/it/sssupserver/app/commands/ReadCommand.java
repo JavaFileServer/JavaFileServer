@@ -5,15 +5,15 @@ import it.sssupserver.app.base.*;
 
 public class ReadCommand implements Command {
     private Path path;
-    private int begin;
-    private int len;
+    private long begin;
+    private long len;
 
     public ReadCommand(ReadCommand cmd)
     {
         this(cmd.getPath(), cmd.getBegin(), cmd.getLen());
     }
 
-    public ReadCommand(Path path, int begin, int len)
+    public ReadCommand(Path path, long begin, long len)
     {
         this.path = path;
         this.begin = begin;
@@ -40,12 +40,12 @@ public class ReadCommand implements Command {
         return this.path;
     }
 
-    public int getBegin()
+    public long getBegin()
     {
         return this.begin;
     }
 
-    public int getLen()
+    public long getLen()
     {
         return this.len;
     }
