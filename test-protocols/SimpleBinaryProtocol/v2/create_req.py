@@ -37,7 +37,7 @@ def usage(comm):
     exit(1)
 
 if __name__ == "__main__":
-    if len(sys.argv) < 4:
+    if len(sys.argv) < 3:
         usage(sys.argv[0])
 
     port = 5050

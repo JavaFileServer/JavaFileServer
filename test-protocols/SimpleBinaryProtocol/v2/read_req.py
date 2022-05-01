@@ -47,7 +47,7 @@ def recv_ans(sck):
     elif status == 1:
         # check padding
         check_padding(sck, 2)
-        print("Error while reading file", file=sys.stderr)
+        raise Exception("Error while reading file")
     else:
         raise Exception("Bad status, found:", status)
 
