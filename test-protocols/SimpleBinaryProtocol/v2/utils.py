@@ -2,17 +2,22 @@
 
 import socket
 
+def read_all(sck, length):
+    buf = bytes()
+    while length > 0:
+        tmp = sck.recv(length, socket.MSG_WAITALL)
+        buf += tmp
+        length -= len(tmp)
+    return buf
+
 def read_int(sck, length):
-    v = sck.recv(length, socket.MSG_WAITALL)
+    v = read_all(sck, length)
     if len(v) != length:
         raise Exception("Bad read "+ str(len(v)))
     return int.from_bytes(v, byteorder='big')
 
 def check_version(sck, version):
-    v = sck.recv(4, socket.MSG_WAITALL)
-    if len(v) != 4:
-        raise Exception("Bad read "+ str(len(v)))
-    found = int.from_bytes(v, byteorder='big')
+    found = read_int(sck, 4)
     if version != found:
         raise Exception("Bad version, found:", found, "instead of", version)
 
@@ -22,18 +27,12 @@ def check_type(sck, cmd_type):
         raise Exception("Bad type, found:", found, "instead of", cmd_type)
 
 def check_category(sck, category):
-    cat = sck.recv(2, socket.MSG_WAITALL)
-    if len(cat) != 2:
-        raise Exception("Bad read")
-    found = int.from_bytes(cat, byteorder='big')
+    found = read_int(sck, 2)
     if category != found:
         raise Exception("Bad category, found:", found, "instead of", category)
 
 def check_padding(sck, lenght):
-    p = sck.recv(lenght, socket.MSG_WAITALL)
-    if len(p) != lenght:
-        raise Exception("Bad read")
-    padding = int.from_bytes(p, byteorder='big')
+    padding = read_int(sck, lenght)
     if padding != 0:
         raise Exception("Bad padding, found:", padding)
 
