@@ -73,7 +73,7 @@ public class FlatTmpExecutor implements SynchronousExecutor {
         var filePath = this.baseDir.resolve(filename);
         try (var fin = FileChannel.open(filePath, StandardOpenOption.READ)) {
             var fileSz = fin.size();
-            var toRead = Math.min((int)fileSz, command.getLen() != 0 ? command.getLen() : MAX_CHUNK_SIZE);
+            var toRead = Math.min((int)fileSz, command.getLen() != 0 ? (int)command.getLen() : MAX_CHUNK_SIZE);
             var buffer = ByteBuffer.allocate(toRead);
             fin.read(buffer, command.getBegin());
             command.reply(buffer);
