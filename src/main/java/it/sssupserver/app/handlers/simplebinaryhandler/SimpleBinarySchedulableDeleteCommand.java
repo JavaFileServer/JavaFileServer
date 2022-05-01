@@ -2,12 +2,24 @@ package it.sssupserver.app.handlers.simplebinaryhandler;
 
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
+import it.sssupserver.app.users.Identity;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class SimpleBinarySchedulableDeleteCommand extends SchedulableDeleteCommand {
+    private Identity user;
+    @Override
+    public void setUser(Identity user) {
+        this.user = user;
+    }
+
+    @Override
+    public Identity getUser() {
+        return this.user;
+    }
+
     private SocketChannel out;
     public SimpleBinarySchedulableDeleteCommand(DeleteCommand cmd, SocketChannel out) {
         super(cmd);
@@ -20,7 +32,7 @@ public class SimpleBinarySchedulableDeleteCommand extends SchedulableDeleteComma
         var bytes = new ByteArrayOutputStream(12);
         var bs = new DataOutputStream(bytes);
         // write data to buffer
-        bs.writeInt(1);    // version
+        bs.writeInt(this.isAuthenticated() ? 2 : 1);    // version
         bs.writeShort(6);  // command: DELETE
         bs.writeShort(1);  // category: answer
         bs.writeBoolean(success);    // data bytes

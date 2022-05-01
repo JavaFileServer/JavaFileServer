@@ -2,12 +2,24 @@ package it.sssupserver.app.handlers.simplebinaryhandler;
 
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
+import it.sssupserver.app.users.Identity;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class SimpleBinarySchedulableMkdirCommand extends SchedulableMkdirCommand {
+    private Identity user;
+    @Override
+    public void setUser(Identity user) {
+        this.user = user;
+    }
+
+    @Override
+    public Identity getUser() {
+        return this.user;
+    }
+
     private SocketChannel out;
     public SimpleBinarySchedulableMkdirCommand(MkdirCommand cmd, SocketChannel out) {
         super(cmd);

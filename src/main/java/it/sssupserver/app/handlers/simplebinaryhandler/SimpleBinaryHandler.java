@@ -1,6 +1,7 @@
 package it.sssupserver.app.handlers.simplebinaryhandler;
 
 import it.sssupserver.app.handlers.*;
+import it.sssupserver.app.users.Identity;
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.SchedulableCommand;
 import it.sssupserver.app.executors.Executor;
@@ -105,6 +106,18 @@ public class SimpleBinaryHandler implements RequestHandler {
                                 {
                                     command = reveiveV1Command(din);
                                     schedulable = makeSchedulable(command, schannel);
+                                }
+                                break;
+                            case 2:
+                                // message of V2 of the protocol
+                                // are equals to the ones in V2
+                                // except for the username
+                                {
+                                    var username = readString(din);
+                                    command = reveiveV1Command(din);
+                                    schedulable = makeSchedulable(command, schannel);
+                                    var hash = username.hashCode();
+                                    schedulable.setUser(new Identity(username, hash));
                                 }
                                 break;
                             default:

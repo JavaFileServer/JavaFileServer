@@ -2,6 +2,7 @@ package it.sssupserver.app.handlers.simplebinaryhandler;
 
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
+import it.sssupserver.app.users.Identity;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -9,6 +10,17 @@ import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 
 public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
+    private Identity user;
+    @Override
+    public void setUser(Identity user) {
+        this.user = user;
+    }
+
+    @Override
+    public Identity getUser() {
+        return this.user;
+    }
+
     private SocketChannel out;
     // remember the offset of the first elementh of the current chunk in
     // the stream of chunks sent back to the client
@@ -29,7 +41,7 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         var bytes = new ByteArrayOutputStream(20);
         var bs = new DataOutputStream(bytes);
         // write data to buffer
-        bs.writeInt(1);    // version
+        bs.writeInt(this.isAuthenticated() ? 2 : 1);    // version
         bs.writeShort(1);  // command: READ
         bs.writeShort(1);  // category: answer
         bs.writeShort(0);  // status: OK
@@ -62,7 +74,7 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         var bytes = new ByteArrayOutputStream(20);
         var bs = new DataOutputStream(bytes);
         // write data to buffer
-        bs.writeInt(1);    // version
+        bs.writeInt(this.isAuthenticated() ? 2 : 1);    // version
         bs.writeShort(1);  // command: READ
         bs.writeShort(1);  // category: answer
         bs.writeShort(0);  // status: OK
@@ -88,7 +100,7 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         var bytes = new ByteArrayOutputStream(20);
         var bs = new DataOutputStream(bytes);
         // write data to buffer
-        bs.writeInt(1);    // version
+        bs.writeInt(this.isAuthenticated() ? 2 : 1);    // version
         bs.writeShort(1);  // command: WRITE
         bs.writeShort(1);  // category: answer
         bs.writeShort(1);  // status: ERRORE

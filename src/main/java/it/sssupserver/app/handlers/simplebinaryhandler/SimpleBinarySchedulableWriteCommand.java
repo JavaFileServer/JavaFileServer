@@ -7,8 +7,20 @@ import java.nio.channels.SocketChannel;
 
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
+import it.sssupserver.app.users.Identity;
 
 public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand {
+    private Identity user;
+    @Override
+    public void setUser(Identity user) {
+        this.user = user;
+    }
+
+    @Override
+    public Identity getUser() {
+        return this.user;
+    }
+
     private SocketChannel out;
     public SimpleBinarySchedulableWriteCommand(WriteCommand cmd, SocketChannel out)
     {
@@ -22,7 +34,7 @@ public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand
         var bytes = new ByteArrayOutputStream(12);
         var bs = new DataOutputStream(bytes);
         // write data to buffer
-        bs.writeInt(1);    // version
+        bs.writeInt(this.isAuthenticated() ? 2 : 1);    // version
         bs.writeShort(8);  // command: WRITE
         bs.writeShort(1);  // category: answer
         bs.writeBoolean(success);    // data bytes

@@ -7,6 +7,12 @@ public class Identity implements Comparable<Identity> {
     private long id;
     private boolean valid;
 
+    public Identity(String username, long id) {
+        this.username = username;
+        this.id = id;
+        this.valid = true;
+    }
+
     public boolean isValid() {
         return this.valid;
     }

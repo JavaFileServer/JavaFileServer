@@ -10,6 +10,8 @@ import it.sssupserver.app.users.Identity;
  * Maybe a method to return error could be useful
  */
 public interface SchedulableCommand extends Command {
+    public void setUser(Identity user);
+
     public default Identity getUser() {
         return null;
     }
