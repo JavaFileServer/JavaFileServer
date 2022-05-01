@@ -4,10 +4,12 @@ import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 
 public class SimpleBinarySchedulableCopyCommand extends SchedulableCopyCommand {
-    private DataOutputStream out;
-    public SimpleBinarySchedulableCopyCommand(CopyCommand cmd, DataOutputStream out) {
+    private SocketChannel out;
+    public SimpleBinarySchedulableCopyCommand(CopyCommand cmd, SocketChannel out) {
         super(cmd);
         this.out = out;
     }
@@ -25,6 +27,6 @@ public class SimpleBinarySchedulableCopyCommand extends SchedulableCopyCommand {
         bs.write(new byte[3]);  // padding
         bs.flush();
         // now data can be sent
-        bytes.writeTo(this.out);
+        this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
     }
 }

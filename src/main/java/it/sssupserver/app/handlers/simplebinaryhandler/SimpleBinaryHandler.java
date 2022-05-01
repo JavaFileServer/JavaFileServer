@@ -12,6 +12,7 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.io.*;
 
@@ -39,7 +40,7 @@ public class SimpleBinaryHandler implements RequestHandler {
 
     class Listener extends Thread {
 
-        private SchedulableCommand makeSchedulable(Command command, DataOutputStream dout) throws Exception {
+        private SchedulableCommand makeSchedulable(Command command, SocketChannel dout) throws Exception {
             SchedulableCommand schedulable;
             if (command instanceof ReadCommand) {
                 schedulable = new SimpleBinarySchedulableReadCommand((ReadCommand)command, dout);
@@ -86,7 +87,8 @@ public class SimpleBinaryHandler implements RequestHandler {
                     // See doc
                     // https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/channels/SocketChannel.html
                     // Not optimal but at least work
-                    var socket = ss.accept().socket();
+                    var schannel = ss.accept();
+                    var socket = schannel.socket();
                     var in = socket.getInputStream();
                     var out = socket.getOutputStream();
                     var din = new DataInputStream(in);
@@ -102,7 +104,7 @@ public class SimpleBinaryHandler implements RequestHandler {
                             case 1:
                                 {
                                     command = reveiveV1Command(din);
-                                    schedulable = makeSchedulable(command, dout);
+                                    schedulable = makeSchedulable(command, schannel);
                                 }
                                 break;
                             default:
@@ -205,7 +207,6 @@ public class SimpleBinaryHandler implements RequestHandler {
         return command;
     }
 
-    @Override
     public Command receiveCommand() throws Exception {
         if (this.started) {
             throw new Exception("Incoerent usage");
@@ -239,45 +240,6 @@ public class SimpleBinaryHandler implements RequestHandler {
         }
 
         return command;
-    }
-
-    @Override
-    public void receiveAndExecuteCommand() throws Exception {
-        System.out.println("Listening on port " + port);
-        try (
-            var ss = new ServerSocket(this.port);
-            var sck = ss.accept();
-            var in = sck.getInputStream();
-            var out = sck.getOutputStream();
-            var din = new DataInputStream(in);
-            var dout = new DataOutputStream(out)
-            )
-        {
-            System.out.println("Request received! Parsing...");
-            int version; Command command;
-
-            version = din.readInt();
-            //System.err.println("Version: " + version);
-            switch (version)
-            {
-                case 1:
-                    command = reveiveV1Command(din);
-                    break;
-                default:
-                    throw new Exception("Unknown message version");
-            }
-            System.out.println("Command: " + command);
-            System.out.println("Execute command...");
-            if (command instanceof ReadCommand && executor instanceof SynchronousExecutor) {
-                ((SynchronousExecutor)executor).execute(new SimpleBinarySchedulableReadCommand((ReadCommand)command, dout));
-            } else if (SimpleBinaryHandler.this.executor instanceof ReplyingExecutor) {
-                ((ReplyingExecutor)executor).execute(command, new SimpleBinaryHandlerReplier(dout));
-            } else {
-                dout.close();
-                throw new Exception("Cannot handle command");
-            }
-            System.out.println("DONE!");
-        }
     }
 
     private static byte[] readBytes(DataInputStream din) throws Exception

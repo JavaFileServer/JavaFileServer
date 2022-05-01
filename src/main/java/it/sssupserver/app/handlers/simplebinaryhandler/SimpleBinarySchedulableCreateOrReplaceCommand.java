@@ -4,10 +4,12 @@ import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 
 public class SimpleBinarySchedulableCreateOrReplaceCommand extends SchedulableCreateOrReplaceCommand {
-    private DataOutputStream out;
-    public SimpleBinarySchedulableCreateOrReplaceCommand(CreateOrReplaceCommand cmd, DataOutputStream out) {
+    private SocketChannel out;
+    public SimpleBinarySchedulableCreateOrReplaceCommand(CreateOrReplaceCommand cmd, SocketChannel out) {
         super(cmd);
         this.out = out;
     }
@@ -25,6 +27,6 @@ public class SimpleBinarySchedulableCreateOrReplaceCommand extends SchedulableCr
         bs.write(new byte[3]);  // padding
         bs.flush();
         // now data can be sent
-        bytes.writeTo(this.out);
+        this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
     }
 }

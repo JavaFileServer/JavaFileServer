@@ -2,13 +2,15 @@ package it.sssupserver.app.handlers.simplebinaryhandler;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
 
 public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand {
-    private DataOutputStream out;
-    public SimpleBinarySchedulableWriteCommand(WriteCommand cmd, DataOutputStream out)
+    private SocketChannel out;
+    public SimpleBinarySchedulableWriteCommand(WriteCommand cmd, SocketChannel out)
     {
         super(cmd);
         this.out = out;
@@ -27,6 +29,6 @@ public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand
         bs.write(new byte[3]);  // padding
         bs.flush();
         // now data can be sent
-        bytes.writeTo(this.out);
+        this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
     }
 }

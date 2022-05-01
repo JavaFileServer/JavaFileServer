@@ -5,11 +5,13 @@ import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.Collection;
 
 public class SimpleBinarySchedulableListCommand extends SchedulableListCommand {
-    private DataOutputStream out;
-    public SimpleBinarySchedulableListCommand(ListCommand cmd, DataOutputStream out) {
+    private SocketChannel out;
+    public SimpleBinarySchedulableListCommand(ListCommand cmd, SocketChannel out) {
         super(cmd);
         this.out = out;
     }
@@ -39,7 +41,7 @@ public class SimpleBinarySchedulableListCommand extends SchedulableListCommand {
         }
         bs.flush();
         // now data can be sent
-        bytes.writeTo(this.out);
+        this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
     }
 
     public void notFound() throws Exception {
@@ -54,6 +56,6 @@ public class SimpleBinarySchedulableListCommand extends SchedulableListCommand {
         bs.writeShort(0);  // padding
         bs.flush();
         // now data can be sent
-        bytes.writeTo(this.out);
+        this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
     }
 }

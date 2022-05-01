@@ -4,10 +4,12 @@ import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 
 public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
-    private DataOutputStream out;
-    public SimpleBinarySchedulableReadCommand(ReadCommand cmd, DataOutputStream out) {
+    private SocketChannel out;
+    public SimpleBinarySchedulableReadCommand(ReadCommand cmd, SocketChannel out) {
         super(cmd);
         this.out = out;
     }
@@ -28,7 +30,7 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         bs.write(data);    // data bytes
         bs.flush();
         // now data can be sent
-        bytes.writeTo(this.out);
+        this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
     }
 
     @Override
@@ -43,7 +45,7 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         bs.writeShort(1);  // status: ERRORE
         bs.writeShort(0);  // padding
         // now data can be sent
-        bytes.writeTo(this.out);
+        this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
     }
 }
 
