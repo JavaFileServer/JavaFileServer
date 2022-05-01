@@ -8,6 +8,8 @@ import java.nio.file.LinkOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
@@ -65,6 +67,19 @@ public class UserTreeExecutor implements Executor {
         this.baseDir.toFile().deleteOnExit();
     }
 
+    private Queue<ByteBuffer> bufferQueue = new ConcurrentLinkedQueue<>();
+    // pair of functions to manage ByteBuffer(s)
+    private void putBuffer(ByteBuffer buffer) {
+        buffer.clear();
+        bufferQueue.add(buffer);
+    }
+    private ByteBuffer getBuffer() {
+        var buffer = bufferQueue.poll();
+        return buffer == null
+                ? ByteBuffer.allocateDirect(MAX_CHUNK_SIZE)
+                : buffer;
+    }
+
     private void handleRead(SchedulableReadCommand command) throws ApplicationException {
         var user = command.getUser();
         var uDir = userDir(user);
@@ -72,11 +87,28 @@ public class UserTreeExecutor implements Executor {
         pool.submit(() -> {
             if (this.filemap.computeIfPresent(path, (p, fin) -> {
                 try {
-                    var fileSz = fin.size();
-                    var toRead = Math.min((int)fileSz, command.getLen() != 0 ? command.getLen() : MAX_CHUNK_SIZE);
-                    var buffer = ByteBuffer.allocate(toRead);
-                    fin.read(buffer, command.getBegin());
-                    try { command.reply(buffer); } catch (Exception ee) { }
+                    fin.position(command.getBegin());
+                    var remainder = fin.size() - fin.position();
+                    var toRead = command.getLen() != 0 ? command.getLen() : remainder;
+                    long read = 0;
+                    do {
+                        var buffer = this.getBuffer();
+                        buffer.limit((int)Math.min(buffer.capacity(), toRead));
+                        var tmp = fin.read(buffer, command.getBegin() + read);
+                        if (tmp > 0) {
+                            read += tmp;
+                        } else {
+                            toRead = 0;
+                        }
+                        buffer.flip();
+                        toRead -= buffer.limit();
+                        if (toRead > 0) {
+                            try { command.partial(buffer); } catch (Exception ee) { }
+                        } else {
+                            try { command.reply(buffer); } catch (Exception ee) { }
+                        }
+                        this.putBuffer(buffer);
+                    } while (toRead > 0);
                 } catch (Exception e) {
                     try { fin.close(); } catch (Exception ee) { }
                     return null;
