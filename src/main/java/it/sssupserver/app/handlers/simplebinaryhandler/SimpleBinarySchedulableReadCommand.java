@@ -33,7 +33,7 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         bs.writeShort(1);  // command: READ
         bs.writeShort(1);  // category: answer
         bs.writeShort(0);  // status: OK
-        bs.writeShort(0);  // bitfield: end of answer
+        bs.writeShort(1);  // bitfield: end of answer
         bs.writeInt(offset);    // offset from the beginning
         bs.writeInt(length);    // data length
         bs.flush();
