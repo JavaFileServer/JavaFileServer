@@ -10,9 +10,46 @@ import java.nio.channels.SocketChannel;
 
 public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
     private SocketChannel out;
+    // remember the offset of the first elementh of the current chunk in
+    // the stream of chunks sent back to the client
+    private int offset;
+
     public SimpleBinarySchedulableReadCommand(ReadCommand cmd, SocketChannel out) {
         super(cmd);
         this.out = out;
+    }
+
+    @Override
+    public void partial(ByteBuffer[] data) throws Exception {
+        var length = 0;
+        for (var a : data) {
+            length += a.limit()-a.position();
+        }
+        // 20 bytes header + payload
+        var bytes = new ByteArrayOutputStream(20);
+        var bs = new DataOutputStream(bytes);
+        // write data to buffer
+        bs.writeInt(1);    // version
+        bs.writeShort(1);  // command: READ
+        bs.writeShort(1);  // category: answer
+        bs.writeShort(0);  // status: OK
+        bs.writeShort(0);  // bitfield: end of answer
+        bs.writeInt(offset);    // offset from the beginning
+        bs.writeInt(length);    // data length
+        bs.flush();
+        // scattered IO
+        var ans = new ByteBuffer[data.length+1];
+        // header
+        ans[0] = ByteBuffer.wrap(bytes.toByteArray());
+        // body
+        for (int i = 0; i < data.length; ++i) {
+            ans[1+i] = data[i];
+        }
+        // now data can be sent
+        this.out.write(ans);
+
+        // Partial response sent.
+        offset += length;
     }
 
     @Override
@@ -30,7 +67,7 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         bs.writeShort(1);  // category: answer
         bs.writeShort(0);  // status: OK
         bs.writeShort(0);  // bitfield: end of answer
-        bs.writeInt(0);    // offset from the beginning
+        bs.writeInt(offset);    // offset from the beginning
         bs.writeInt(length);    // data length
         bs.flush();
         // scattered IO
