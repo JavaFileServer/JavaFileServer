@@ -28,10 +28,10 @@ public abstract class SchedulableReadCommand extends ReadCommand implements Sche
         }
         buffers[(int)nBuffers-1] = ByteBuffer.allocateDirect((int)(toRead % Integer.MAX_VALUE));
         fc.write(buffers);
-        this.reply(buffers);
+        this.partial(buffers);
     }
     public void partial(ByteBuffer data) throws Exception {
-        this.reply(new ByteBuffer[]{data});
+        this.partial(new ByteBuffer[]{data});
     }
     public abstract void partial(ByteBuffer[] data) throws Exception;
 
