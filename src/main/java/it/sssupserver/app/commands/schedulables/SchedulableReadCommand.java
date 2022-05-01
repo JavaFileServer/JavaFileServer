@@ -16,6 +16,9 @@ public abstract class SchedulableReadCommand extends ReadCommand implements Sche
         fc.write(buffer, offset);
         this.reply(buffer);
     }
-    public abstract void reply(ByteBuffer data) throws Exception;
+    public void reply(ByteBuffer data) throws Exception {
+        this.reply(new ByteBuffer[]{data});
+    }
+    public abstract void reply(ByteBuffer[] data) throws Exception;
     public abstract void notFound() throws Exception;
 }

@@ -16,8 +16,11 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
     }
 
     @Override
-    public void reply(ByteBuffer data) throws Exception {
-        var length = data.limit()-data.position();
+    public void reply(ByteBuffer[] data) throws Exception {
+        var length = 0;
+        for (var a : data) {
+            length += a.limit()-a.position();
+        }
         // 20 bytes header + payload
         var bytes = new ByteArrayOutputStream(20);
         var bs = new DataOutputStream(bytes);
@@ -30,11 +33,16 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         bs.writeInt(0);    // offset from the beginning
         bs.writeInt(length);    // data length
         bs.flush();
+        // scattered IO
+        var ans = new ByteBuffer[data.length+1];
+        // header
+        ans[0] = ByteBuffer.wrap(bytes.toByteArray());
+        // body
+        for (int i = 0; i < data.length; ++i) {
+            ans[1+i] = data[i];
+        }
         // now data can be sent
-        this.out.write(new ByteBuffer[]{
-            ByteBuffer.wrap(bytes.toByteArray()), // header
-            data // body
-        });
+        this.out.write(ans);
     }
 
     @Override
