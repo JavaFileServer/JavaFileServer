@@ -74,10 +74,9 @@ public class UserTreeExecutor implements Executor {
                 try {
                     var fileSz = fin.size();
                     var toRead = Math.min((int)fileSz, command.getLen() != 0 ? command.getLen() : MAX_CHUNK_SIZE);
-                    var bytes = new byte[toRead];
-                    var buffer = ByteBuffer.wrap(bytes);
+                    var buffer = ByteBuffer.allocate(toRead);
                     fin.read(buffer, command.getBegin());
-                    try { command.reply(bytes); } catch (Exception ee) { }
+                    try { command.reply(buffer); } catch (Exception ee) { }
                 } catch (Exception e) {
                     try { fin.close(); } catch (Exception ee) { }
                     return null;

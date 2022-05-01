@@ -5,6 +5,7 @@ import it.sssupserver.app.commands.schedulables.*;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 
 public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
@@ -15,9 +16,10 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
     }
 
     @Override
-    public void reply(byte[] data) throws Exception {
+    public void reply(ByteBuffer data) throws Exception {
+        var length = data.limit()-data.position();
         // 20 bytes header + payload
-        var bytes = new ByteArrayOutputStream(20+data.length);
+        var bytes = new ByteArrayOutputStream(20);
         var bs = new DataOutputStream(bytes);
         // write data to buffer
         bs.writeInt(1);    // version
@@ -26,11 +28,13 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         bs.writeShort(0);  // status: OK
         bs.writeShort(0);  // bitfield: end of answer
         bs.writeInt(0);    // offset from the beginning
-        bs.writeInt(data.length);    // data length
-        bs.write(data);    // data bytes
+        bs.writeInt(length);    // data length
         bs.flush();
         // now data can be sent
-        this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
+        this.out.write(new ByteBuffer[]{
+            ByteBuffer.wrap(bytes.toByteArray()), // header
+            data // body
+        });
     }
 
     @Override

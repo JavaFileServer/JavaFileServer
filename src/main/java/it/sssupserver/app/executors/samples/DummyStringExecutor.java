@@ -1,5 +1,6 @@
 package it.sssupserver.app.executors.samples;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import it.sssupserver.app.executors.ReplyingExecutor;
@@ -53,7 +54,7 @@ public class DummyStringExecutor implements ReplyingExecutor, SynchronousExecuto
         }
         var charset = StandardCharsets.UTF_8;
         var bytes = content.getBytes(charset);
-        command.reply(bytes);
+        command.reply(ByteBuffer.wrap(bytes));
     }
 
     private void handleCreateOrReplace(CreateOrReplaceCommand command, Replier replier) throws Exception

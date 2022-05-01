@@ -1,5 +1,6 @@
 package it.sssupserver.app.executors.samples;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import it.sssupserver.app.executors.ReplyingExecutor;
@@ -62,7 +63,7 @@ public class DummyMapExecutor implements ReplyingExecutor, SynchronousExecutor {
         if (data != null) {
             var charset = StandardCharsets.UTF_8;
             var bytes = data.getBytes(charset);
-            command.reply(bytes);
+            command.reply(ByteBuffer.wrap(bytes));
         } else {
             command.notFound();
         }
