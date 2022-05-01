@@ -13,4 +13,8 @@ public interface SchedulableCommand extends Command {
     public default Identity getUser() {
         return null;
     }
+
+    public default boolean isAuthenticated() {
+        return this.getUser() != null;
+    }
 }
