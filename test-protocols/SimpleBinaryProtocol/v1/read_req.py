@@ -30,27 +30,23 @@ def recv_ans(sck):
     status = read_int(sck, 2)
     if status == 0:
         # message status
-        f = sck.recv(2, socket.MSG_WAITALL)
-        if len(f) != 2:
-            raise Exception("Bad read")
-        flags = int.from_bytes(f, byteorder='big')
-        if flags != 0:
+        flags = read_int(sck, 2)
+        if (flags | 1) ^ 1 != 0:    # only bit 0 can be 1
             raise Exception("Bad flags, found:", flags)
         # data info
-        d = sck.recv(8, socket.MSG_WAITALL)
-        if len(d) != 8:
-            raise Exception("Bad read")
-        begin = int.from_bytes(d[:4], byteorder='big')
-        length = int.from_bytes(d[4:], byteorder='big')
-        payload = sck.recv(length, socket.MSG_WAITALL)
+        begin = read_int(sck, 4)
+        length = read_int(sck, 4)
+        payload = read_all(sck, length)
         if len(payload) != length:
             raise Exception("Missing " + str(length -len(payload)) + " bytes")
-        sys.stdout.buffer.write(payload)
-
+        # other chunks availables
+        if flags & 1:
+            payload += recv_ans(sck)
+        return payload
     elif status == 1:
         # check padding
         check_padding(sck, 2)
-        print("Error while reading file", file=sys.stderr)
+        raise Exception("Error while reading file")
     else:
         raise Exception("Bad status, found:", status)
 
@@ -70,7 +66,8 @@ if __name__ == "__main__":
     length = 0 if len(sys.argv) <= 3 else int(sys.argv[3])
     cmd = serialize_write_message(path, offset, length)
     sck = send_cmd(port, cmd)
-    sck.settimeout(1)
+    sck.settimeout(100)
     #time.sleep(1)
-    recv_ans(sck)
+    payload = recv_ans(sck)
+    sys.stdout.buffer.write(payload)
     sck.close()
