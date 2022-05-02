@@ -168,6 +168,7 @@ public class App
         buffer.putShort((short)4);
         buffer.putShort((short)0);
         buffer.put(serializeString(path));
+        buffer.flip();
         return buffer;
     }
 
@@ -199,6 +200,7 @@ public class App
         buffer.putShort((short)6);
         buffer.putShort((short)0);
         buffer.put(serializeString(path));
+        buffer.flip();
         return buffer;
     }
 
@@ -230,6 +232,7 @@ public class App
         buffer.putShort((short)7);
         buffer.putShort((short)0);
         buffer.put(serializeString(path));
+        buffer.flip();
         return buffer;
     }
 
@@ -266,6 +269,7 @@ public class App
         buffer.putShort((short)0);
         buffer.put(serializeString(source));
         buffer.put(serializeString(destination));
+        buffer.flip();
         return buffer;
     }
 
@@ -299,6 +303,7 @@ public class App
         buffer.putShort((short)0);
         buffer.put(serializeString(source));
         buffer.put(serializeString(destination));
+        buffer.flip();
         return buffer;
     }
 
@@ -330,6 +335,7 @@ public class App
         buffer.putShort((short)12);
         buffer.putShort((short)0);
         buffer.put(serializeString(path));
+        buffer.flip();
         return buffer;
     }
 
