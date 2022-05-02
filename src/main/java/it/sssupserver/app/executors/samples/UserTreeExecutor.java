@@ -68,16 +68,27 @@ public class UserTreeExecutor implements Executor {
     }
 
     private Queue<ByteBuffer> bufferQueue = new ConcurrentLinkedQueue<>();
-    // pair of functions to manage ByteBuffer(s)
-    private void putBuffer(ByteBuffer buffer) {
-        buffer.clear();
-        bufferQueue.add(buffer);
+    private class BufferWrapper implements AutoCloseable {
+        private ByteBuffer buffer;
+        public BufferWrapper(ByteBuffer buffer) {
+            this.buffer = buffer;
+        }
+
+        public ByteBuffer get() {
+            return this.buffer;
+        }
+
+        @Override
+        public void close() throws Exception {
+            buffer.clear();
+            bufferQueue.add(buffer);
+        }
     }
-    private ByteBuffer getBuffer() {
+    private BufferWrapper getBuffer() {
         var buffer = bufferQueue.poll();
-        return buffer == null
+        return new BufferWrapper(buffer == null
                 ? ByteBuffer.allocateDirect(MAX_CHUNK_SIZE)
-                : buffer;
+                : buffer);
     }
 
     private void handleRead(SchedulableReadCommand command) throws ApplicationException {
@@ -91,24 +102,25 @@ public class UserTreeExecutor implements Executor {
                     var remainder = fin.size() - fin.position();
                     var toRead = command.getLen() != 0 ? command.getLen() : remainder;
                     long read = 0;
-                    do {
-                        var buffer = this.getBuffer();
-                        buffer.limit((int)Math.min(buffer.capacity(), toRead));
-                        var tmp = fin.read(buffer, command.getBegin() + read);
-                        if (tmp > 0) {
-                            read += tmp;
-                        } else {
-                            toRead = 0;
-                        }
-                        buffer.flip();
-                        toRead -= buffer.limit();
-                        if (toRead > 0) {
-                            try { command.partial(buffer); } catch (Exception ee) { }
-                        } else {
-                            try { command.reply(buffer); } catch (Exception ee) { }
-                        }
-                        this.putBuffer(buffer);
-                    } while (toRead > 0);
+                    try (var wrapper = getBuffer()) {
+                        do {
+                            var buffer = wrapper.get();
+                            buffer.limit((int)Math.min(buffer.capacity(), toRead));
+                            var tmp = fin.read(buffer, command.getBegin() + read);
+                            if (tmp > 0) {
+                                read += tmp;
+                            } else {
+                                toRead = 0;
+                            }
+                            buffer.flip();
+                            toRead -= buffer.limit();
+                            if (toRead > 0) {
+                                try { command.partial(buffer); } catch (Exception ee) { }
+                            } else {
+                                try { command.reply(buffer); } catch (Exception ee) { }
+                            }
+                        } while (toRead > 0);
+                    }
                 } catch (Exception e) {
                     try { fin.close(); } catch (Exception ee) { }
                     return null;
