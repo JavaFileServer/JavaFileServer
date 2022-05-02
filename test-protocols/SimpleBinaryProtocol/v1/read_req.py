@@ -19,7 +19,7 @@ def serialize_write_message(path, begin = 0, length = 0):
         length.to_bytes(4,byteorder='big')
 
 
-def recv_ans(sck):
+def recv_chunk(sck):
     # message version
     check_version(sck, 1)
     # message type
@@ -40,15 +40,19 @@ def recv_ans(sck):
         if len(payload) != length:
             raise Exception("Missing " + str(length -len(payload)) + " bytes")
         # other chunks availables
-        if flags & 1:
-            payload += recv_ans(sck)
-        return payload
+        return (flags & 1 != 0, payload)
     elif status == 1:
         # check padding
         check_padding(sck, 2)
         raise Exception("Error while reading file")
     else:
         raise Exception("Bad status, found:", status)
+
+def recv_ans(sck):
+    repeat = True
+    while repeat:
+        [repeat, chunk] = recv_chunk(sck)
+        sys.stdout.buffer.write(chunk)
 
 port = 5050
 
@@ -68,6 +72,5 @@ if __name__ == "__main__":
     sck = send_cmd(port, cmd)
     sck.settimeout(100)
     #time.sleep(1)
-    payload = recv_ans(sck)
-    sys.stdout.buffer.write(payload)
+    recv_ans(sck)
     sck.close()
