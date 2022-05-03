@@ -2,6 +2,9 @@ package it.sssupclient.app;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.Thread.State;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -25,154 +28,26 @@ public class App
         System.exit(1);
     }
 
-    static final int BUF_SIZE = 1 << 16;
-    static Queue<ByteBuffer> bufQueue = new LinkedList<ByteBuffer>();
-
-    static ByteBuffer getBuffer() {
-        var ans = bufQueue.poll();
-        return ans == null
-            ? ByteBuffer.allocateDirect(BUF_SIZE)
-            : ans;
-    }
-
-    static void putBuffer(ByteBuffer buffer) {
-        buffer.clear();
-        bufQueue.add(buffer);
-    }
-
-    static void writeAll(SocketChannel sc, ByteBuffer[] buffers) {
-        try {
-            boolean available;
-            do {
-                available = false;
-                sc.write(buffers);
-                for (var b : buffers) {
-                    if (b.hasRemaining()) {
-                        available = true;
-                        break;
-                    }
-                }
-            } while (available);
-        } catch (Exception e) {
-            panic("Failed writing to SocketChannel: " + e);
-        }
-    }
-
-    static void writeAll(SocketChannel sc, ByteBuffer buffer) {
-        writeAll(sc, new ByteBuffer[]{buffer});
-    }
-
-    static ByteBuffer readBytes(SocketChannel sc, int length) {
-        var buf = getBuffer();
-        buf.limit(length);
-        do {
-            try {
-                sc.read(buf);
-            } catch (Exception e) {
-                System.err.println("Read failed: " + e);
-            }
-        } while(buf.hasRemaining());
-        buf.flip();
-        return buf;
-    }
-
-    static int readInt(SocketChannel sc) {
-        var ans = readBytes(sc, 4);
-        return ans.getInt();
-    }
-
-    static short readShort(SocketChannel sc) {
-        var ans = readBytes(sc, 2);
-        return ans.getShort();
-    }
-
-    static short readByte(SocketChannel sc) {
-        var ans = readBytes(sc, 1);
-        return ans.get();
-    }
-
-    static String readString(SocketChannel sc) {
-        var length = readInt(sc);
-        var data = readBytes(sc, length);
-        var bytes = new byte[data.remaining()];
-        data.get(bytes);
-        var string = new String(bytes, StandardCharsets.UTF_8);
-        putBuffer(data);
-        return string;
-    }
-
-    public static byte[] serializeString(String string) {
-        var data = string.getBytes(StandardCharsets.UTF_8);
-        var bytes = new ByteArrayOutputStream(4 + data.length);
-        var bs = new DataOutputStream(bytes);
-        try {
-            bs.writeInt(data.length);
-            bs.write(data);
-            bs.flush();            
-        } catch (Exception e) {
-            System.err.println("Exception: " + e);
-            System.exit(1);
-        }
-        return bytes.toByteArray();
-    }
-
-    static void checkInt(SocketChannel sc, int value) {
-        var ans = readInt(sc);
-        if (ans != value) {
-            panic("Bad read: found " + ans + " instead of " + value);
-        }
-    }
-
-    static void checkShort(SocketChannel sc, short value) {
-        var ans = readShort(sc);
-        if (ans != value) {
-            panic("Bad read: found " + ans + " instead of " + value);
-        }
-    }
-
-    static void checkVersion(SocketChannel sc, int version) {
-        checkInt(sc, version);
-    }
-
-    static void checkType(SocketChannel sc, short type) {
-        checkShort(sc, type);
-    }
-    
-    static void checkAns(SocketChannel sc) {
-        checkShort(sc, (short)1);
-    }
-
-    static void checkPadding(SocketChannel sc, int length) {
-        var padding = new byte[length];
-        var buffer = readBytes(sc, length);
-        buffer.get(padding);
-        for (var b : padding) {
-            if (b != 0) {
-                panic("padding: found " + b);
-            }
-        }
-        putBuffer(buffer);
-    }
-
-    static ByteBuffer listExists(String username, String path) {
-        var buffer = getBuffer();
+    static BufferManager.BufferWrapper listExists(String username, String path) {
+        var wrapper = BufferManager.getBuffer();
+        var buffer = wrapper.get();
         var version = username == null ? 1 : 2;
         buffer.putInt(version);
         if (version == 2) {
-            buffer.put(serializeString(username));
+            buffer.put(Helpers.serializeString(username));
         }
         buffer.putShort((short)3);
         buffer.putShort((short)0);
-        buffer.put(serializeString(path));
-        return buffer;
+        buffer.put(Helpers.serializeString(path));
+        return wrapper;
     }
 
     static boolean parseExistsAns(SocketChannel sc, int version) {
-        checkVersion(sc, version);
-        checkType(sc, (short)3);
-        checkAns(sc);
-        var status = readByte(sc);
-        checkPadding(sc, 3);
+        Helpers.checkVersion(sc, version);
+        Helpers.checkType(sc, (short)3);
+        Helpers.checkAns(sc);
+        var status = Helpers.readByte(sc);
+        Helpers.checkPadding(sc, 3);
         boolean ans = false;
         switch (status) {
         case 0:
@@ -189,11 +64,11 @@ public class App
         var version = username == null ? 1 : 2;
         buffer.putInt(version);
         if (version == 2) {
-            buffer.put(serializeString(username));
+            buffer.put(Helpers.serializeString(username));
         }
         buffer.putShort((short)1);
         buffer.putShort((short)0);
-        buffer.put(serializeString(path));
+        buffer.put(Helpers.serializeString(path));
         buffer.putInt((int)offset);
         buffer.putInt((int)length);
         buffer.flip();
@@ -227,19 +102,19 @@ public class App
      * ans.first    = success (not error)
      * ans.second   = (if first == true) last chunk
      */
-    static Pair<Boolean,Boolean> parseRead(SocketChannel sc, int version, ReadConsumer consumer) {
+    static Pair<Boolean,Boolean> parseChunk(SocketChannel sc, int version, ReadConsumer consumer) {
         Pair<Boolean,Boolean> ans = new Pair<Boolean,Boolean>();
         int tmp = 0;
-        checkVersion(sc, version);
-        checkType(sc, (short)1);
-        checkAns(sc);
-        var status = readShort(sc);
+        Helpers.checkVersion(sc, version);
+        Helpers.checkType(sc, (short)1);
+        Helpers.checkAns(sc);
+        var status = Helpers.readShort(sc);
         switch (status) {
         case 0:
-            var flags = readShort(sc);
+            var flags = Helpers.readShort(sc);
             var last = (flags & 1) == 0;
-            int offset = readInt(sc);
-            int toRead = readInt(sc);
+            int offset = Helpers.readInt(sc);
+            int toRead = Helpers.readInt(sc);
             var buffer = getBuffer();
             var read = 0;
             do {
@@ -272,17 +147,42 @@ public class App
         return ans;
     }
 
+    static boolean parseRead(SocketChannel sc, int version) {
+        boolean ans = false;
+        boolean repeat = true;
+        try {
+            try (var stout = new FileOutputStream(FileDescriptor.out);
+                var out = stout.getChannel()) {
+                ReadConsumer writer = (long offset, boolean last, ByteBuffer data) -> {
+                    try {
+                        out.write(data);
+                    } catch (Exception e) {
+                        panic("Error writing to STDOUT.");
+                    }
+                };
+                do {
+                    var res = parseChunk(sc, version, writer);
+                    ans = res.first;
+                    repeat = res.first && !res.second;
+                } while (repeat);
+            }
+        } catch (IOException e) {
+            panic("Error handling read: " + e);
+        }
+        return ans;
+    }
+
     static ByteBuffer[] buildCreateOrReplace(String username, String path, ByteBuffer[] content) {
         var ans = new ByteBuffer[1+content.length];
         var header = getBuffer();
         var version = username == null ? 1 : 2;
         header.putInt(version);
         if (version == 2) {
-            header.put(serializeString(username));
+            header.put(Helpers.serializeString(username));
         }
         header.putShort((short)2);
         header.putShort((short)0);
-        header.put(serializeString(path));
+        header.put(Helpers.serializeString(path));
         int length = 0;
         for (var c : content) {
             length += c.remaining();
@@ -297,11 +197,11 @@ public class App
     }
 
     static boolean parseCreateOrReplaceAns(SocketChannel sc, int version) {
-        checkVersion(sc, version);
-        checkType(sc, (short)2);
-        checkAns(sc);
-        var status = readByte(sc);
-        checkPadding(sc, 3);
+        Helpers.checkVersion(sc, version);
+        Helpers.checkType(sc, (short)2);
+        Helpers.checkAns(sc);
+        var status = Helpers.readByte(sc);
+        Helpers.checkPadding(sc, 3);
         boolean ans = false;
         switch (status) {
         case 0:
@@ -319,21 +219,21 @@ public class App
         var version = username == null ? 1 : 2;
         buffer.putInt(version);
         if (version == 2) {
-            buffer.put(serializeString(username));
+            buffer.put(Helpers.serializeString(username));
         }
         buffer.putShort((short)4);
         buffer.putShort((short)0);
-        buffer.put(serializeString(path));
+        buffer.put(Helpers.serializeString(path));
         buffer.flip();
         return buffer;
     }
 
     static boolean parseTruncateAns(SocketChannel sc, int version) {
-        checkVersion(sc, version);
-        checkType(sc, (short)4);
-        checkAns(sc);
-        var status = readByte(sc);
-        checkPadding(sc, 3);
+        Helpers.checkVersion(sc, version);
+        Helpers.checkType(sc, (short)4);
+        Helpers.checkAns(sc);
+        var status = Helpers.readByte(sc);
+        Helpers.checkPadding(sc, 3);
         boolean ans = false;
         switch (status) {
         case 0:
@@ -555,6 +455,28 @@ public class App
 
     static Map<String, Handler> handlers = new TreeMap<>();
 
+    static void addReadhandler() {
+        handlers.put("read",
+        new Handler("path",
+        (String[] args) -> {
+            String username = null;
+            var path = args.length > 0 ? args[0] : ".";
+            var sc = connect();
+            var r = buildListReq(username, path);
+            writeAll(sc, r);
+            putBuffer(r);
+            var files = parseListAns(sc, username != null ? 2 : 1);
+            if (files != null) {
+                System.out.println("Found " + files.length + " files:");
+                for (int i=0; i != files.length; ++i) {
+                    System.out.println(i + ") " + files[i]);
+                }
+            } else {
+                System.err.println("Bad request: bad path?");;
+            }
+        }, "read content of a file"));
+    }
+
     static void addListhandler() {
         handlers.put("list",
         new Handler("[path]",
@@ -578,6 +500,7 @@ public class App
     }
 
     static void addHandlers() {
+        addReadhandler();
         addListhandler();
     }
 
@@ -612,7 +535,7 @@ public class App
     public static void main( String[] args ) throws Exception
     {
         args = new String[]{
-            "list"
+            //"list"
         };
 
         addHandlers();
