@@ -56,12 +56,9 @@ public class SimpleBinaryHandler implements RequestHandler {
                     var schannel = ss.accept();
                     var socket = schannel.socket();
                     var in = socket.getInputStream();
-                    var out = socket.getOutputStream();
                     var din = new DataInputStream(in);
 
                     try {
-                        Command command;
-                        SchedulableCommand schedulable;
                         int version;
                         Identity user = null;
                         int marker = 0;
