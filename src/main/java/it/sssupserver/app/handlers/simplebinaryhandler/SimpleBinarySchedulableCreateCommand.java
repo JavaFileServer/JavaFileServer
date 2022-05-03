@@ -12,7 +12,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Semaphore;
 
-public class SimpleBinarySchedulableCreateCommand extends SchedulableCreateCommand {
+public class SimpleBinarySchedulableCreateCommand extends SchedulableCreateCommand implements AutoCloseable {
     private static class Result {
         private Semaphore sem;
         public Result() {
@@ -126,4 +126,12 @@ public class SimpleBinarySchedulableCreateCommand extends SchedulableCreateComma
             reply(sc, version, true);
         }
     }
+
+    @Override
+    public void close() throws Exception {
+        if (wrapper != null) {
+            wrapper.close();
+        }
+    }
+
 }
