@@ -16,9 +16,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import it.sssupserver.app.base.Path;
-import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
 import it.sssupserver.app.exceptions.ApplicationException;
+import it.sssupserver.app.exceptions.CommandNotSupportedException;
 import it.sssupserver.app.exceptions.InvalidIdentityException;
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.users.Identity;
@@ -436,7 +436,7 @@ public class UserTreeExecutor implements Executor {
         } else if (command instanceof SchedulableMkdirCommand) {
             handleMkdir((SchedulableMkdirCommand)command);
         } else {
-            throw new Exception("Unknown command");
+            throw new CommandNotSupportedException(command.getType());
         }
     }
 
