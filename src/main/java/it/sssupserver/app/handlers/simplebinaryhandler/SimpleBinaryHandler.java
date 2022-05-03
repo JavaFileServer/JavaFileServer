@@ -14,7 +14,6 @@ import java.io.*;
 public class SimpleBinaryHandler implements RequestHandler {
 
     private int port;
-    private boolean started = false;
     private Executor executor;
 
     public SimpleBinaryHandler(Executor executor) throws Exception
