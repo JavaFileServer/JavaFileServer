@@ -6,7 +6,7 @@ import it.sssupserver.app.base.*;
 
 public class WriteCommand implements Command {
     private Path path;
-    private int offset;
+    private long offset;
     private ByteBuffer data;
     private boolean sync;
 
@@ -15,7 +15,7 @@ public class WriteCommand implements Command {
         this(cmd.getPath(), cmd.getData(), cmd.getOffset());
     }
 
-    public WriteCommand(Path path, ByteBuffer data, int offset, boolean sync)
+    public WriteCommand(Path path, ByteBuffer data, long offset, boolean sync)
     {
         this.path = path;
         this.data = data;
@@ -23,7 +23,7 @@ public class WriteCommand implements Command {
         this.sync = sync;
     }
 
-    public WriteCommand(Path path, ByteBuffer data, int offset)
+    public WriteCommand(Path path, ByteBuffer data, long offset)
     {
         this(path, data, 0, false);
     }
@@ -48,12 +48,12 @@ public class WriteCommand implements Command {
         return this.path;
     }
 
-    public int getOffset()
+    public long getOffset()
     {
         return this.offset;
     }
 
-    public int getLen()
+    public long getLen()
     {
         return this.data.limit() - this.data.position();
     }
