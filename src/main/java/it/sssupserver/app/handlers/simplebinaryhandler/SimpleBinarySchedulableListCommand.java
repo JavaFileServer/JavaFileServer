@@ -3,6 +3,7 @@ package it.sssupserver.app.handlers.simplebinaryhandler;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
+import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.users.Identity;
 
 import java.io.*;
@@ -69,5 +70,14 @@ public class SimpleBinarySchedulableListCommand extends SchedulableListCommand {
         bs.flush();
         // now data can be sent
         this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
+    }
+
+    public static void handle(Executor executor, SocketChannel sc, DataInputStream din, int version, Identity user, int marker) throws Exception {
+        SimpleBinaryHandler.checkCategory(din);
+        var path = SimpleBinaryHandler.readString(din);
+        var cmd = new ListCommand(new Path(path));
+        var schedulable = new SimpleBinarySchedulableListCommand(cmd, sc);
+        schedulable.setUser(user);
+        executor.scheduleExecution(schedulable);
     }
 }

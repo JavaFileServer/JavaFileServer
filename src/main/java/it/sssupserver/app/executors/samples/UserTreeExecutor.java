@@ -15,6 +15,8 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.swing.text.GlyphView.GlyphPainter;
+
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.schedulables.*;
 import it.sssupserver.app.exceptions.ApplicationException;
@@ -96,15 +98,19 @@ public class UserTreeExecutor implements Executor {
         var uDir = userDir(user);
         var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
+            var flag = new Object(){
+                public boolean found = false;
+            };
             if (this.filemap.computeIfPresent(path, (p, fin) -> {
                 try {
+                    flag.found = true;
                     fin.position(command.getBegin());
                     var remainder = fin.size() - fin.position();
                     var toRead = command.getLen() != 0 ? command.getLen() : remainder;
                     long read = 0;
                     try (var wrapper = getBuffer()) {
+                        var buffer = wrapper.get();
                         do {
-                            var buffer = wrapper.get();
                             buffer.limit((int)Math.min(buffer.capacity(), toRead));
                             var tmp = fin.read(buffer, command.getBegin() + read);
                             if (tmp > 0) {
@@ -119,6 +125,7 @@ public class UserTreeExecutor implements Executor {
                             } else {
                                 try { command.reply(buffer); } catch (Exception ee) { }
                             }
+                            buffer.clear();
                         } while (toRead > 0);
                     }
                 } catch (Exception e) {
@@ -126,7 +133,7 @@ public class UserTreeExecutor implements Executor {
                     return null;
                 }
                 return fin;
-            }) == null) {
+            }) == null && !flag.found) {
                 try { command.notFound(); } catch (Exception ee) { }
             }
         });
@@ -277,6 +284,9 @@ public class UserTreeExecutor implements Executor {
         var uDir = userDir(user);
         var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
+            var flag = new Object(){
+                public boolean success = false;
+            };
             if (this.filemap.computeIfPresent(path, (p, fout) -> {
                 try {
                     var buffer = command.getData();
@@ -284,14 +294,12 @@ public class UserTreeExecutor implements Executor {
                     if (command.requireSync()) {
                         fout.force(true);
                     }
-                    try { command.reply(true); } catch (Exception ee) { }
-                } catch (IOException e) {
-                    try { command.reply(false); } catch (Exception ee) { }
-                }
+                    flag.success = true;
+                } catch (IOException e) { }
                 return fout;
             }) == null) {
-                try { command.reply(false); } catch (Exception e) { }
             }
+            try { command.reply(flag.success); } catch (Exception e) { }
         });
     }
 
@@ -300,12 +308,14 @@ public class UserTreeExecutor implements Executor {
         var uDir = userDir(user);
         var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
+            var flag = new Object(){
+                public boolean success = false;
+            };
             if (this.filemap.computeIfAbsent(path, (p) -> {
                 FileChannel fout = null;
                 try {
                     fout = FileChannel.open(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
                 } catch (IOException e) {
-                    try { command.reply(false); } catch (Exception ee) { }
                     return null;
                 }
                 try {
@@ -314,14 +324,12 @@ public class UserTreeExecutor implements Executor {
                     if (command.requireSync()) {
                         fout.force(true);
                     }
-                    try { command.reply(true); } catch (Exception ee) { }
-                } catch (Exception e) {
-                    try { command.reply(false); } catch (Exception ee) { }
-                }
+                    flag.success = true;
+                } catch (Exception e) { }
                 return fout;
-            }) == null) {
-                try { command.reply(false); } catch (Exception e) { }
+            }) != null) {
             }
+            try { command.reply(flag.success); } catch (Exception e) { }
         });
     }
 
@@ -331,23 +339,23 @@ public class UserTreeExecutor implements Executor {
         var srcPath = java.nio.file.Path.of(uDir.toString(), command.getSource().getPath());
         var dsrPath = java.nio.file.Path.of(uDir.toString(), command.getDestination().getPath());
         pool.submit(() -> {
-            if (this.filemap.computeIfAbsent(dsrPath, (dst) -> {
+            var flag = new Object(){
+                public boolean success = false;
+            };
+            this.filemap.computeIfAbsent(dsrPath, (dst) -> {
                 this.filemap.compute(srcPath, (src, fout) -> {
                     if (fout != null) {
                         try { fout.close(); } catch (IOException ee) { }
                     }
                     try {
                         Files.copy(srcPath, dsrPath);
-                        try { command.reply(true); } catch (Exception ee) { }
-                    } catch (IOException e) {
-                        try { command.reply(false); } catch (Exception ee) { }
-                    }
+                        flag.success = true;
+                    } catch (IOException e) { }
                     return null;
                 });
                 return null;
-            }) == null) {
-                try { command.reply(false); } catch (Exception ee) { }
-            }
+            });
+            try { command.reply(flag.success); } catch (Exception ee) { }
         });
     }
 
@@ -372,22 +380,24 @@ public class UserTreeExecutor implements Executor {
                 } catch (IOException e) {
                     try { command.reply(false); } catch (Exception ee) { }
                 }
-            } else if (this.filemap.computeIfAbsent(dstPath, (dst) -> {
-                this.filemap.compute(srcPath, (src, fout) -> {
-                    if (fout != null) {
-                        try { fout.close(); } catch (IOException ee) { }
-                    }
-                    try {
-                        Files.move(srcPath, dstPath);
-                        try { command.reply(true); } catch (Exception ee) { }
-                    } catch (IOException e) {
-                        try { command.reply(false); } catch (Exception ee) { }
-                    }
+            } else {
+                var flag = new Object(){
+                    public boolean success = false;
+                };
+                this.filemap.computeIfAbsent(dstPath, (dst) -> {
+                    this.filemap.compute(srcPath, (src, fout) -> {
+                        if (fout != null) {
+                            try { fout.close(); } catch (IOException ee) { }
+                        }
+                        try {
+                            Files.move(srcPath, dstPath);
+                            flag.success = true;
+                        } catch (IOException e) { }
+                        return null;
+                    });
                     return null;
                 });
-                return null;
-            }) == null) {
-                try { command.reply(false); } catch (Exception ee) { }
+                try { command.reply(flag.success); } catch (Exception ee) { }
             }
         });
     }

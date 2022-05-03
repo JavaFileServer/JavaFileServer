@@ -15,6 +15,7 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.sql.Time;
 import java.io.*;
 
 
@@ -41,42 +42,6 @@ public class SimpleBinaryHandler implements RequestHandler {
 
     class Listener extends Thread {
 
-        private SchedulableCommand makeSchedulable(Command command, SocketChannel dout) throws Exception {
-            SchedulableCommand schedulable;
-            if (command instanceof ReadCommand) {
-                schedulable = new SimpleBinarySchedulableReadCommand((ReadCommand)command, dout);
-            } else if (command instanceof ExistsCommand) {
-                schedulable = new SimpleBinarySchedulableExistsCommand((ExistsCommand)command, dout);
-            } else if (command instanceof TruncateCommand) {
-                schedulable = new SimpleBinarySchedulableTruncateCommand((TruncateCommand)command, dout);
-            } else if (command instanceof CreateOrReplaceCommand) {
-                schedulable = new SimpleBinarySchedulableCreateOrReplaceCommand((CreateOrReplaceCommand)command, dout);
-            } else if (command instanceof AppendCommand) {
-                schedulable = new SimpleBinarySchedulableAppendCommand((AppendCommand)command, dout);
-            } else if (command instanceof ListCommand) {
-                schedulable = new SimpleBinarySchedulableListCommand((ListCommand)command, dout);
-            } else if (command instanceof DeleteCommand) {
-                schedulable = new SimpleBinarySchedulableDeleteCommand((DeleteCommand)command, dout);
-            } else if (command instanceof WriteCommand) {
-                schedulable = new SimpleBinarySchedulableWriteCommand((WriteCommand)command, dout);
-            } else if (command instanceof CreateCommand) {
-                schedulable = new SimpleBinarySchedulableCreateCommand((CreateCommand)command, dout);
-            } else if (command instanceof CopyCommand) {
-                schedulable = new SimpleBinarySchedulableCopyCommand((CopyCommand)command, dout);
-            } else if (command instanceof MoveCommand) {
-                schedulable = new SimpleBinarySchedulableMoveCommand((MoveCommand)command, dout);
-            } else if (command instanceof MkdirCommand) {
-                schedulable = new SimpleBinarySchedulableMkdirCommand((MkdirCommand)command, dout);
-            //} else if (SimpleBinaryHandler.this.executor instanceof ReplyingExecutor) {
-            //    var replier = new SimpleBinaryHandlerReplier(dout);
-            //    ((ReplyingExecutor)SimpleBinaryHandler.this.executor).scheduleExecution(command, replier);
-            } else {
-                dout.close();
-                throw new Exception("Cannot handle command");
-            }
-            return schedulable;
-        }
-
         @Override
         public void run()
         {
@@ -93,48 +58,84 @@ public class SimpleBinaryHandler implements RequestHandler {
                     var in = socket.getInputStream();
                     var out = socket.getOutputStream();
                     var din = new DataInputStream(in);
-                    var dout = new DataOutputStream(out);
-                    int version; Command command;
-                    SchedulableCommand schedulable;
 
                     try {
-                        version = din.readInt();
-                        //System.err.println("Version: " + version);
-                        switch (version)
-                        {
-                            case 1:
-                                {
-                                    command = reveiveV1Command(din);
-                                    schedulable = makeSchedulable(command, schannel);
-                                }
-                                break;
-                            case 2:
-                                // message of V2 of the protocol
-                                // are equals to the ones in V2
-                                // except for the username
-                                {
-                                    var username = readString(din);
-                                    command = reveiveV1Command(din);
-                                    schedulable = makeSchedulable(command, schannel);
-                                    var hash = username.hashCode();
-                                    schedulable.setUser(new Identity(username, hash));
-                                }
-                                break;
-                            default:
-                                throw new Exception("Unknown message version");
+                        Command command;
+                        SchedulableCommand schedulable;
+                        int version;
+                        Identity user = null;
+                        int marker = 0;
+                        short type = 0;
+                        switch (version = din.readInt()) {
+                        case 1: // no special parameters
+                            break;
+                        case 2: // username available
+                            {
+                                var username = readString(din);
+                                var hash = username.hashCode();
+                                user = new Identity(username, hash);
+                            }
+                            break;
+                        case 3: // username and marker
+                            {
+                                marker = din.readInt();
+                                var username = readString(din);
+                                var hash = username.hashCode();
+                                user = new Identity(username, hash);
+                            }
+                            break;
+                        default:
+                            throw new Exception("Unknown message version: " + version);
                         }
+
+                        switch (type = din.readShort()) {
+                            case 1:
+                            SimpleBinarySchedulableReadCommand.handle(executor, schannel, din, version, user, marker);
+                            break;
+                        case 2:
+                            SimpleBinarySchedulableCreateOrReplaceCommand.handle(executor, schannel, din, version, user, marker);
+                            break;
+                        case 3:
+                            SimpleBinarySchedulableWriteCommand.handle(executor, schannel, din, version, user, marker);
+                            break;
+                        case 4:
+                            SimpleBinarySchedulableTruncateCommand.handle(executor, schannel, din, version, user, marker);
+                            break;
+                        case 5:
+                            SimpleBinarySchedulableAppendCommand.handle(executor, schannel, din, version, user, marker);
+                            break;
+                        case 6:
+                            SimpleBinarySchedulableDeleteCommand.handle(executor, schannel, din, version, user, marker);
+                            break;
+                        case 7:
+                            SimpleBinarySchedulableListCommand.handle(executor, schannel, din, version, user, marker);
+                            break;
+                        case 8:
+                            SimpleBinarySchedulableWriteCommand.handle(executor, schannel, din, version, user, marker);
+                            break;
+                        case 9:
+                            SimpleBinarySchedulableCreateCommand.handle(executor, schannel, din, version, user, marker);
+                            break;
+                        case 10:
+                            SimpleBinarySchedulableCopyCommand.handle(executor, schannel, din, version, user, marker);
+                            break;
+                        case 11:
+                            SimpleBinarySchedulableMoveCommand.handle(executor, schannel, din, version, user, marker);
+                            break;
+                        case 12:
+                            SimpleBinarySchedulableMkdirCommand.handle(executor, schannel, din, version, user, marker);
+                            break;
+                        default:
+                            throw new Exception("Unknown message type: " + type);
+                        }
+
                     } catch (Exception e) {
                         System.err.println("Error occurred while parsing command: " + e);
-                        continue;
-                    }
-                    try {
-                        executor.scheduleExecution(schedulable);
-                    } catch (Exception e) {
                         String stackTrace = ""; int i=0;
                         for (var st : e.getStackTrace()) {
                             stackTrace += ++i + ") " + st.toString() + "\n";
                         }
-                        System.err.println("Error occurred while scheduling command [" + schedulable.toString() + "]: " + e.getMessage() + "\n|> stacktrace: " + stackTrace);
+                        System.err.println("Error occurred while scheduling command" + e.getMessage() + "\n|> stacktrace: " + stackTrace);
                     }
                 }
             } catch (ClosedByInterruptException e) {
@@ -255,7 +256,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         return command;
     }
 
-    private static byte[] readBytes(DataInputStream din) throws Exception
+    public static byte[] readBytes(DataInputStream din) throws Exception
     {
         var len = din.readInt();
         if (len < 0)
@@ -268,7 +269,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         return bytes;
     }
 
-    private static String readString(DataInputStream din) throws Exception
+    public static String readString(DataInputStream din) throws Exception
     {
         var bytes = readBytes(din);
         var recover = new String(bytes, StandardCharsets.UTF_8);
@@ -392,7 +393,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         return cmd;
     }
 
-    private static void checkCategory(DataInputStream din) throws Exception
+    public static void checkCategory(DataInputStream din) throws Exception
     {
         short category = din.readShort();
         if (category != 0) {

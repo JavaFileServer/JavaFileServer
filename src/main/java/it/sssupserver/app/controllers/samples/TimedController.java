@@ -5,7 +5,7 @@ import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.handlers.RequestHandler;
 
 public class TimedController implements Controller {
-    private long millis = 5*60*1000;
+    private long millis = 5*60*1000*60;
 
     public TimedController() {}
 

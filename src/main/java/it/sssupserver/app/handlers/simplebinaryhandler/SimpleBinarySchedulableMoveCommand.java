@@ -1,7 +1,9 @@
 package it.sssupserver.app.handlers.simplebinaryhandler;
 
+import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
+import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.users.Identity;
 
 import java.io.*;
@@ -40,5 +42,15 @@ public class SimpleBinarySchedulableMoveCommand extends SchedulableMoveCommand {
         bs.flush();
         // now data can be sent
         this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
+    }
+
+    public static void handle(Executor executor, SocketChannel sc, DataInputStream din, int version, Identity user, int marker) throws Exception {
+        SimpleBinaryHandler.checkCategory(din);
+        var src = SimpleBinaryHandler.readString(din);
+        var dst = SimpleBinaryHandler.readString(din);
+        var cmd = new MoveCommand(new Path(src), new Path(dst));
+        var schedulable = new SimpleBinarySchedulableMoveCommand(cmd, sc);
+        schedulable.setUser(user);
+        executor.scheduleExecution(schedulable);
     }
 }
