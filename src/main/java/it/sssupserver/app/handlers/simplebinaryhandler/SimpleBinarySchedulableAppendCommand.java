@@ -118,7 +118,7 @@ public class SimpleBinarySchedulableAppendCommand extends SchedulableAppendComma
             if (tmp < 0) {
                 throw new Exception("Bad read");
             }
-            buffer.put(buf);
+            buffer.put(buf, 0, tmp);
             // ready to read
             buffer.flip();
             // increase counters

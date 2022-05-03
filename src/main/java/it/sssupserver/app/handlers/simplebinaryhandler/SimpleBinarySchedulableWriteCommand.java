@@ -3,6 +3,7 @@ package it.sssupserver.app.handlers.simplebinaryhandler;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Semaphore;
@@ -98,6 +99,11 @@ public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand
         var path = new Path(SimpleBinaryHandler.readString(din));
         var offset = din.readInt();
         var length = din.readInt();
+        var success = write(executor, din, user, path, offset, length);
+        reply(sc, version, success);
+    }
+
+    public static boolean write(Executor executor, DataInputStream din, Identity user, Path path, int offset, int length) throws IOException, Exception {
         var read = 0;
         var nChunks = 0;
         var res = new Result();
@@ -118,20 +124,20 @@ public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand
             if (tmp < 0) {
                 throw new Exception("Bad read");
             }
-            buffer.put(buf);
+            buffer.put(buf, 0, tmp);
             // ready to read
             buffer.flip();
+            // prepare command
+            var schedulable = new SimpleBinarySchedulableWriteCommand(res, path, wrapper, offset);
             // increase counters
             offset += buffer.remaining();
             read += buffer.remaining();
-            // prepare command
-            var schedulable = new SimpleBinarySchedulableWriteCommand(res, path, wrapper, offset);
             // send chunks one by one
             schedulable.setUser(user);
             executor.scheduleExecution(schedulable);
         }
         var success = res.success(nChunks);
-        reply(sc, version, success);
+        return success;
     }
 
     @Override

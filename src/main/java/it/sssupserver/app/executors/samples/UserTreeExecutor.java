@@ -290,7 +290,7 @@ public class UserTreeExecutor implements Executor {
             if (this.filemap.computeIfPresent(path, (p, fout) -> {
                 try {
                     var buffer = command.getData();
-                    fout.position(command.getOffset()).write(buffer);
+                    fout.write(buffer, command.getOffset());
                     if (command.requireSync()) {
                         fout.force(true);
                     }
