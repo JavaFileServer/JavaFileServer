@@ -50,6 +50,6 @@ path = "." if len(sys.argv) == 1 else sys.argv[1]
 if __name__ == "__main__":
     cmd = serialize_list_message(path)
     sck = send_cmd(port, cmd)
-    sck.settimeout(1)
+    sck.settimeout(100)
     #time.sleep(1)
     recv_ans(sck)

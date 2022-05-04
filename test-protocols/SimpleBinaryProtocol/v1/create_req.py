@@ -46,6 +46,6 @@ if __name__ == "__main__":
     #content = "Another NEW super beautiful message!" if len(sys.argv) == 1 else sys.argv[1]
     cmd = serialize_create_message(path, content)
     sck = send_cmd(port, cmd)
-    sck.settimeout(1)
+    sck.settimeout(100)
     #time.sleep(1)
     recv_ans(sck)

@@ -51,6 +51,6 @@ if __name__ == "__main__":
     content = bytes(sys.argv[2], "utf-8") if len(sys.argv) == 3 else sys.stdin.buffer.read()
     cmd = serialize_append_message(path, content)
     sck = send_cmd(port, cmd)
-    sck.settimeout(1)
+    sck.settimeout(1000)
     #time.sleep(1)
     recv_ans(sck)
