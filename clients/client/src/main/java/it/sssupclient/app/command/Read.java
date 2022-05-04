@@ -26,7 +26,6 @@ public class Read implements Command {
     public void parse(int version, String username, String[] args) throws Exception {
         this.version = version;
         this.username = username;
-        // TODO Auto-generated method stub
         if (args.length < 2) {
             throw new InvalidArgumentsException("Missing required arguments");
         }
