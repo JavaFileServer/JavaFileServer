@@ -26,6 +26,7 @@ import it.sssupclient.app.command.Exists;
 import it.sssupclient.app.command.List;
 import it.sssupclient.app.command.Read;
 import it.sssupclient.app.command.Scheduler;
+import it.sssupclient.app.command.Truncate;
 
 /**
  * Hello world!
@@ -90,6 +91,7 @@ public class App
             new Create(),
             new Append(),
             new Exists(),
+            new Truncate(),
         };
         for (var cmd : cmds) {
             commands.put(cmd.getName(), cmd);
