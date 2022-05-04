@@ -115,14 +115,14 @@ public class Read implements Command {
         try (var wrapper = BufferManager.getBuffer()) {
             var buffer = wrapper.get();
             buffer.putInt(this.version);
+            if (this.version >= 3) {
+                this.marker = new Random().nextInt();
+                buffer.putInt(this.marker);
+            }
             buffer.putShort(this.getType());
             buffer.putShort((short)0);
             if (this.version >= 2) {
                 buffer.put(Helpers.serializeString(this.username));
-            }
-            if (this.version >= 3) {
-                this.marker = new Random().nextInt();
-                buffer.putInt(this.marker);
             }
             buffer.put(Helpers.serializeString(this.path));
             // offset & length
