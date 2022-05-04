@@ -4,6 +4,8 @@ import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
 
+import it.sssupclient.app.Helpers;
+
 /**
  * Handle command handler.
  * When a command is executed its handler
@@ -34,7 +36,18 @@ public class Scheduler {
         });
     }
 
-    public void parse(SocketChannel sc) {
-        ...
+    public void parse(SocketChannel sc) throws Exception {
+        boolean done;
+        do {
+            var version = Helpers.readInt(sc);
+            var marker = version < 3 ? 0 : Helpers.readInt(sc);
+            var type = Helpers.readShort(sc);
+            var category = Helpers.readShort(sc);
+            if (category != 1) {
+                Helpers.panic("Bad category, found: " + category);
+            }
+            var handler = map.get(version).get(marker).get(type);
+            done = handler.parseResponseBody(sc);
+        } while (!done);
     }
 }

@@ -7,7 +7,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 
 public class Helpers {
-    static void panic(String error) {
+    public static void panic(String error) {
         System.err.println("Panic: " + error);
         System.exit(1);
     }
@@ -30,11 +30,11 @@ public class Helpers {
         }
     }
 
-    static void writeAll(SocketChannel sc, ByteBuffer buffer) {
+    public static void writeAll(SocketChannel sc, ByteBuffer buffer) {
         writeAll(sc, new ByteBuffer[]{buffer});
     }
 
-    static BufferManager.BufferWrapper readBytes(SocketChannel sc, int length) {
+    public static BufferManager.BufferWrapper readBytes(SocketChannel sc, int length) {
         var wrapper = BufferManager.getBuffer();
         var buf = wrapper.get();
         buf.limit(length);
@@ -49,25 +49,31 @@ public class Helpers {
         return wrapper;
     }
 
-    static int readInt(SocketChannel sc) {
+    public static long readLong(SocketChannel sc) {
+        try (var ans = readBytes(sc, 8);) {
+            return ans.get().getLong();
+        }
+    }
+
+    public static int readInt(SocketChannel sc) {
         try (var ans = readBytes(sc, 4);) {
             return ans.get().getInt();
         }
     }
 
-    static short readShort(SocketChannel sc) {
+    public static short readShort(SocketChannel sc) {
         try (var ans = readBytes(sc, 2);) {
             return ans.get().getShort();
         }
     }
 
-    static short readByte(SocketChannel sc) {
+    public static short readByte(SocketChannel sc) {
         try (var ans = readBytes(sc, 1);) {
             return ans.get().get();
         }
     }
 
-    static String readString(SocketChannel sc) {
+    public static String readString(SocketChannel sc) {
         var length = readInt(sc);
         try (var wrapper = readBytes(sc, length);)
         {
@@ -120,7 +126,7 @@ public class Helpers {
         checkShort(sc, (short)1);
     }
 
-    static void checkPadding(SocketChannel sc, int length) {
+    public static void checkPadding(SocketChannel sc, int length) {
         var padding = new byte[length];
         try (var buffer = readBytes(sc, length);) {
             buffer.get().get(padding);

@@ -10,12 +10,18 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.TreeMap;
 import java.util.function.Consumer;
+
+import it.sssupclient.app.command.Command;
+import it.sssupclient.app.command.List;
+import it.sssupclient.app.command.Read;
+import it.sssupclient.app.command.Scheduler;
 
 /**
  * Hello world!
@@ -28,7 +34,7 @@ public class App
         System.exit(1);
     }
 
-    static BufferManager.BufferWrapper listExists(String username, String path) {
+/*    static BufferManager.BufferWrapper listExists(String username, String path) {
         var wrapper = BufferManager.getBuffer();
         var buffer = wrapper.get();
         var version = username == null ? 1 : 2;
@@ -59,21 +65,6 @@ public class App
         }
         return ans;
     }
-    static ByteBuffer buildRead(String username, String path, long offset, long length) {
-        var buffer = getBuffer();
-        var version = username == null ? 1 : 2;
-        buffer.putInt(version);
-        if (version == 2) {
-            buffer.put(Helpers.serializeString(username));
-        }
-        buffer.putShort((short)1);
-        buffer.putShort((short)0);
-        buffer.put(Helpers.serializeString(path));
-        buffer.putInt((int)offset);
-        buffer.putInt((int)length);
-        buffer.flip();
-        return buffer;
-    }
 
     @FunctionalInterface
     interface ReadConsumer {
@@ -97,11 +88,11 @@ public class App
         public T1 first;
         public T2 second;
     }
-
-    /**
-     * ans.first    = success (not error)
-     * ans.second   = (if first == true) last chunk
-     */
+/*
+    //
+    // ans.first    = success (not error)
+    // ans.second   = (if first == true) last chunk
+    //
     static Pair<Boolean,Boolean> parseChunk(SocketChannel sc, int version, ReadConsumer consumer) {
         Pair<Boolean,Boolean> ans = new Pair<Boolean,Boolean>();
         int tmp = 0;
@@ -413,7 +404,7 @@ public class App
         }
         return ans;
     }
-
+*/
     static String host = "localhost";
     static int port = 5050;
     static SocketChannel connect() {
@@ -442,7 +433,7 @@ public class App
         return ans;
     }
 
-    static class Handler {
+    /*static class Handler {
         public final String usage;
         public final String description;
         public final Consumer<String[]> handler;
@@ -451,9 +442,9 @@ public class App
             this.handler = handler;
             this.description = description;
         }
-    }
+    }*/
 
-    static Map<String, Handler> handlers = new TreeMap<>();
+/*    static Map<String, Handler> handlers = new TreeMap<>();
 
     static void addReadhandler() {
         handlers.put("read",
@@ -499,12 +490,13 @@ public class App
         }, "list files at the given location or root by default"));
     }
 
+    
     static void addHandlers() {
         addReadhandler();
         addListhandler();
-    }
+    }*/
 
-    static void help() {
+    /*static void help() {
         System.err.println("Usage:");
         System.err.println("\tcommand [args]");
         System.err.println();
@@ -516,7 +508,7 @@ public class App
         }
         System.exit(1);
     }
-
+    
     static void handleCmd(String cmd, String[] args) {
         var h = handlers.get(cmd);
         if (h == null) {
@@ -524,25 +516,73 @@ public class App
             help();
         }
         h.handler.accept(args);
-    }
-
-    static void handle(String[] args) {
+    }*/
+    
+    /*static void handle(String[] args) {
         var cmd = args[0];
         args = getArgs(args, 1);
         handleCmd(cmd, args);
+    }*/
+    
+    static Map<String, Command> commands = new TreeMap<>(); 
+
+    static void handleCommand(Command command, int version, String username, String[] args) throws Exception {
+        try {
+            command.parse(version, username, args);
+        } catch (Exception e) {
+            System.err.println("Error occurred while parsing command " + command.getName());
+            command.printHelp("\t");
+        }
+        var sc = connect();
+        var scheduler = new Scheduler(sc);
+        command.exec(sc, scheduler);
+        scheduler.parse(sc);
+    }
+
+    static void addCommmands() {
+        var cmds = new Command[] {
+            new Read(),
+            new List(),
+        };
+        for (var cmd : cmds) {
+            commands.put(cmd.getName(), cmd);
+        }
+    }
+
+    static void help() {
+        System.err.println("Usage:");
+        System.err.println("\tcommand [args]");
+        System.err.println();
+        System.err.println("\tAvailable commands:");
+        for (var cmd : commands.entrySet()) {
+            cmd.getValue().printHelp("\t\t");
+            System.err.println();
+        }
+        System.exit(1);
+    }
+
+    static void handle(String[] params) throws Exception {
+        var cmd = params[0];
+        var args = getArgs(params, 1);
+        var command = commands.get(cmd);
+        handleCommand(command, 1, null, args);
     }
 
     public static void main( String[] args ) throws Exception
     {
         args = new String[]{
             //"list"
+            //"read", "data/f1", "f1"
+            "read", "data/linux-5.18-rc5.tar.gz", "linux-5.18-rc5.tar.gz"
+            //"read", "data/nums.txt", "nums.txt"
+            //"--help"
         };
 
-        addHandlers();
+        addCommmands();
+        //addHandlers();
         if (args.length == 0 || args[0].equals("--help")) {
             help();
         }
         handle(args);
-
     }
 }

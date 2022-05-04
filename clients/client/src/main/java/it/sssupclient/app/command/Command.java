@@ -2,15 +2,19 @@ package it.sssupclient.app.command;
 
 import java.nio.channels.SocketChannel;
 
-import it.sssupclient.app.exceptions.InvalidArgumentsException;
-
 /**
  * Class representing a command provided by the user
  */
 public interface Command {
-    public void parse(String[] args) throws InvalidArgumentsException;
+    public void parse(int version, String username, String[] args) throws Exception;
     public void printHelp(String lpadding);
     public String getName();
-    public void parseResponseBody(SocketChannel sc);
-    public void exec(Scheduler scheduler);
+    /**
+     * Return true if this handler has completely received
+     * the required response. 
+     */
+    public boolean parseResponseBody(SocketChannel sc) throws Exception;
+    public void exec(SocketChannel sc, Scheduler scheduler);
+    public short getType();
+    public int getMarker();
 }
