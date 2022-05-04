@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 
 import it.sssupclient.app.command.Append;
 import it.sssupclient.app.command.Command;
+import it.sssupclient.app.command.Copy;
 import it.sssupclient.app.command.Create;
 import it.sssupclient.app.command.CreateOrReplace;
 import it.sssupclient.app.command.Delete;
@@ -98,6 +99,7 @@ public class App
             new Delete(),
             new Mkdir(),
             new Move(),
+            new Copy(),
         };
         for (var cmd : cmds) {
             commands.put(cmd.getName(), cmd);
