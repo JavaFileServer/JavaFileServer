@@ -574,7 +574,8 @@ public class App
 
     public static void main( String[] args ) throws Exception
     {
-        args = new String[]{
+        args = args.length > 0 ? args :
+        new String[]{
             //"list"
             //"read", "data/f1", "f1"
             //"read", "data/linux-5.18-rc5.tar.gz", "linux-5.18-rc5.tar.gz"
