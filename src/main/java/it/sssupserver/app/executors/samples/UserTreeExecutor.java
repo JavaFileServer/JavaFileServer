@@ -69,6 +69,19 @@ public class UserTreeExecutor implements Executor {
         this.baseDir.toFile().deleteOnExit();
     }
 
+    public UserTreeExecutor(java.nio.file.Path dir) throws Exception
+    {
+        if (Files.exists(dir)) {
+            if (!Files.isDirectory(dir)) {
+                throw new Exception("'" + dir + "' is not a directory");
+            }
+        } else {
+            Files.createDirectories(dir);
+        }
+        this.baseDir = dir;
+        System.out.println("Dase directory: " + this.baseDir);
+    }
+
     private Queue<ByteBuffer> bufferQueue = new ConcurrentLinkedQueue<>();
     private class BufferWrapper implements AutoCloseable {
         private ByteBuffer buffer;
