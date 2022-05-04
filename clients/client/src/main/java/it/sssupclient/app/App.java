@@ -19,6 +19,7 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 
 import it.sssupclient.app.command.Command;
+import it.sssupclient.app.command.CreateOrReplace;
 import it.sssupclient.app.command.List;
 import it.sssupclient.app.command.Read;
 import it.sssupclient.app.command.Scheduler;
@@ -543,6 +544,7 @@ public class App
         var cmds = new Command[] {
             new Read(),
             new List(),
+            new CreateOrReplace(),
         };
         for (var cmd : cmds) {
             commands.put(cmd.getName(), cmd);
@@ -573,8 +575,9 @@ public class App
         args = new String[]{
             //"list"
             //"read", "data/f1", "f1"
-            "read", "data/linux-5.18-rc5.tar.gz", "linux-5.18-rc5.tar.gz"
-            //"read", "data/nums.txt", "nums.txt"
+            //"read", "data/linux-5.18-rc5.tar.gz", "linux-5.18-rc5.tar.gz"
+            "read", "data/linux.tar.gz", "linux-5.18-rc5.tar.gz"
+            //"create-or-replace", "data/linux-5.18-rc5.tar.gz", "linux-5.18-rc5.tar.gz"
             //"--help"
         };
 

@@ -14,7 +14,7 @@ public interface Command {
      * the required response. 
      */
     public boolean parseResponseBody(SocketChannel sc) throws Exception;
-    public void exec(SocketChannel sc, Scheduler scheduler);
+    public void exec(SocketChannel sc, Scheduler scheduler) throws Exception;
     public short getType();
     public int getMarker();
 }
