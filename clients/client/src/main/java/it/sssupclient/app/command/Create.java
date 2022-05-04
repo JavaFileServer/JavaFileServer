@@ -45,7 +45,7 @@ public class Create implements Command {
             lpadding = "";
         }
         System.err.println(lpadding + getName() + " local_path remote_path");
-        System.err.println(lpadding + "\t copy and save (if not exists) to the remote path the file at the local_path");
+        System.err.println(lpadding + "\t upload file, fail if file exists");
     }
 
     @Override

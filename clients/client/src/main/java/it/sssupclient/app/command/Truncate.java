@@ -29,7 +29,7 @@ public class Truncate implements Command {
             lpadding = "";
         }
         System.err.println(lpadding + getName() + " remote_path");
-        System.err.println(lpadding + "\t test existence of remote file");
+        System.err.println(lpadding + "\t truncate remote file");
     }
 
     @Override

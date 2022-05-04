@@ -45,7 +45,7 @@ public class CreateOrReplace implements Command {
             lpadding = "";
         }
         System.err.println(lpadding + getName() + " local_path remote_path");
-        System.err.println(lpadding + "\t copy and save (or replace) to the remote path the file at the local_path");
+        System.err.println(lpadding + "\t upload file, replace existing file");
     }
 
     @Override
