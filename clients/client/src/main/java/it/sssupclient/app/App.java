@@ -31,6 +31,7 @@ import it.sssupclient.app.command.Move;
 import it.sssupclient.app.command.Read;
 import it.sssupclient.app.command.Scheduler;
 import it.sssupclient.app.command.Truncate;
+import it.sssupclient.app.command.Write;
 
 /**
  * Hello world!
@@ -77,7 +78,7 @@ public class App
         try {
             command.parse(version, username, args);
         } catch (Exception e) {
-            System.err.println("Error occurred while parsing command " + command.getName());
+            System.err.println("Error occurred while parsing command " + command.getName() + " " + e);
             command.printHelp("\t");
             System.exit(1);
         }
@@ -100,6 +101,7 @@ public class App
             new Mkdir(),
             new Move(),
             new Copy(),
+            new Write(),
         };
         for (var cmd : cmds) {
             commands.put(cmd.getName(), cmd);
@@ -131,6 +133,7 @@ public class App
 
     public static void main( String[] args ) throws Exception
     {
+        args = new String[]{ "write", "data/corrige", "ciao", "1" };
         /*args = args.length > 0 ? args :
         new String[]{
             //"list"
