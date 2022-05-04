@@ -133,18 +133,6 @@ public class App
 
     public static void main( String[] args ) throws Exception
     {
-        args = new String[]{ "write", "data/corrige", "ciao", "1" };
-        /*args = args.length > 0 ? args :
-        new String[]{
-            //"list"
-            //"read", "data/f1", "f1"
-            //"read", "data/linux-5.18-rc5.tar.gz", "linux-5.18-rc5.tar.gz"
-            //"read", "data/linux.tar.gz", "linux-5.18-rc5.tar.gz"
-            //"create-or-replace", "data/linux-5.18-rc5.tar.gz", "linux-5.18-rc5.tar.gz"
-            "create", "data/linux-5.18-rc5.tar.gz", "linux.tar.gz"
-            //"--help"
-        };*/
-
         addCommmands();
         //addHandlers();
         if (args.length == 0 || args[0].equals("--help")) {
