@@ -22,6 +22,7 @@ import it.sssupclient.app.command.Append;
 import it.sssupclient.app.command.Command;
 import it.sssupclient.app.command.Create;
 import it.sssupclient.app.command.CreateOrReplace;
+import it.sssupclient.app.command.Exists;
 import it.sssupclient.app.command.List;
 import it.sssupclient.app.command.Read;
 import it.sssupclient.app.command.Scheduler;
@@ -88,6 +89,7 @@ public class App
             new CreateOrReplace(),
             new Create(),
             new Append(),
+            new Exists(),
         };
         for (var cmd : cmds) {
             commands.put(cmd.getName(), cmd);
