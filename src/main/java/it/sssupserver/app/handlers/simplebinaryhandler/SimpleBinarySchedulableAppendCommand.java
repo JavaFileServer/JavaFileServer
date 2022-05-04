@@ -134,6 +134,24 @@ public class SimpleBinarySchedulableAppendCommand extends SchedulableAppendComma
             }
         } while (read != length);
         reply(sc, version, success);
+        // consume unused data
+        if (read != length) {
+            try (var wrapper = BufferManager.getBuffer();) {
+                var buffer = wrapper.get();
+                while (read != length) {
+                    var remainder = length - read;
+                    var toRead = (int)Math.min(remainder, buffer.remaining());
+                    buffer.limit(toRead);
+                    while (buffer.hasRemaining()) {
+                        if (sc.read(buffer) <= 0) {
+                            throw new Exception("Bad read");
+                        }
+                    }
+                    buffer.clear();
+                    length += toRead;
+                }
+            }
+        }
     }
 
     @Override
