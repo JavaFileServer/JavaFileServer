@@ -182,7 +182,7 @@ public class UserTreeExecutor implements Executor {
                     if (fout == null) {
                         fout = FileChannel.open(path,  StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
                     } else {
-                        fout.truncate(0);
+                        fout.truncate(command.getLength());
                     }
                 } catch (IOException e) {
                     try { command.reply(false); } catch (Exception ee) { }

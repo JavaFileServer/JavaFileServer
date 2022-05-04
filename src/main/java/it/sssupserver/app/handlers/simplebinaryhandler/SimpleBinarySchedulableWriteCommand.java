@@ -54,14 +54,14 @@ public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand
 
     private Result res;
     private BufferManager.BufferWrapper wrapper;
-    private SimpleBinarySchedulableWriteCommand(Result res, Path path, BufferManager.BufferWrapper data, int offset, boolean sync)
+    private SimpleBinarySchedulableWriteCommand(Result res, Path path, BufferManager.BufferWrapper data, long offset, boolean sync)
     {
         super(path, data.get(), offset, sync);
         this.res = res;
         this.wrapper = data;
     }
 
-    private SimpleBinarySchedulableWriteCommand(Result res, Path path, BufferManager.BufferWrapper data, int offset) {
+    private SimpleBinarySchedulableWriteCommand(Result res, Path path, BufferManager.BufferWrapper data, long offset) {
         this(res, path, data, offset, false);
     }
 
@@ -79,12 +79,16 @@ public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand
         }
     }
 
-    private static void reply(SocketChannel sc, int version, boolean success) throws Exception {
+    private static void reply(SocketChannel sc, int version, int marker, boolean success) throws Exception {
         // 12 bytes header, no payload
         var bytes = new ByteArrayOutputStream(12);
         var bs = new DataOutputStream(bytes);
         // write data to buffer
         bs.writeInt(version);    // version
+        if (version >= 3) {
+            // write marker
+            bs.writeInt(marker);
+        }
         bs.writeShort(8);  // command: WRITE
         bs.writeShort(1);  // category: answer
         bs.writeBoolean(success);    // data bytes
@@ -100,10 +104,10 @@ public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand
         var offset = din.readInt();
         var length = din.readInt();
         var success = write(executor, din, user, path, offset, length);
-        reply(sc, version, success);
+        reply(sc, version, marker, success);
     }
 
-    public static boolean write(Executor executor, DataInputStream din, Identity user, Path path, int offset, int length) throws IOException, Exception {
+    public static boolean write(Executor executor, DataInputStream din, Identity user, Path path, long offset, long length) throws IOException, Exception {
         var read = 0;
         var nChunks = 0;
         var res = new Result();
@@ -116,7 +120,7 @@ public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand
             var buffer = wrapper.get();
             // how many bytes to read now?
             var remainder = length - read;
-            var toRead = Math.min(remainder, buffer.remaining());
+            var toRead = (int)Math.min(remainder, buffer.remaining());
             // read bytes
             var buf = new byte[toRead];
             var tmp = din.read(buf);

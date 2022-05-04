@@ -7,15 +7,22 @@ import it.sssupserver.app.base.Path;
  */
 public class TruncateCommand implements Command {
     private Path path;
+    private long length;
 
     public TruncateCommand(TruncateCommand cmd)
     {
-        this(cmd.getPath());
+        this(cmd.getPath(), cmd.getLength());
+    }
+
+    public TruncateCommand(Path path, long length)
+    {
+        this.path = path;
+        this.length = length;
     }
 
     public TruncateCommand(Path path)
     {
-        this.path = path;
+        this(path, 0L);
     }
 
     public Type getType()
@@ -26,6 +33,11 @@ public class TruncateCommand implements Command {
     public Path getPath()
     {
         return this.path;
+    }
+
+    public long getLength()
+    {
+        return this.length;
     }
 
     @Override

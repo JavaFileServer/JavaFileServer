@@ -8,7 +8,6 @@ import it.sssupserver.app.users.Identity;
 
 import java.io.*;
 import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 
 public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
@@ -26,11 +25,15 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
     private SocketChannel out;
     // remember the offset of the first elementh of the current chunk in
     // the stream of chunks sent back to the client
-    private int offset;
+    private long offset;
 
-    public SimpleBinarySchedulableReadCommand(ReadCommand cmd, SocketChannel out) {
+    private int version;
+    private int marker;
+    private SimpleBinarySchedulableReadCommand(ReadCommand cmd, SocketChannel out, int version, int marker) {
         super(cmd);
         this.out = out;
+        this.version = version;
+        this.marker = marker;
     }
 
     @Override
@@ -39,17 +42,26 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         for (var a : data) {
             length += a.limit()-a.position();
         }
-        // 20 bytes header + payload
-        var bytes = new ByteArrayOutputStream(20);
+        // 20 bytes header + payload + 12 for v 4
+        var bytes = new ByteArrayOutputStream(20+12);
         var bs = new DataOutputStream(bytes);
         // write data to buffer
-        bs.writeInt(this.isAuthenticated() ? 2 : 1);    // version
+        bs.writeInt(version);    // version
+        if (version >= 3) {
+            // write marker
+            bs.writeInt(this.marker);
+        }
         bs.writeShort(1);  // command: READ
         bs.writeShort(1);  // category: answer
         bs.writeShort(0);  // status: OK
         bs.writeShort(1);  // bitfield: end of answer
-        bs.writeInt(offset);    // offset from the beginning
-        bs.writeInt(length);    // data length
+        if (this.version < 4) {
+            bs.writeInt((int)offset);    // offset from the beginning
+            bs.writeInt((int)length);    // data length
+        } else {
+            bs.writeLong(offset);
+            bs.writeLong(length);
+        }
         bs.flush();
         // scattered IO
         var ans = new ByteBuffer[data.length+1];
@@ -72,17 +84,26 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         for (var a : data) {
             length += a.limit()-a.position();
         }
-        // 20 bytes header + payload
-        var bytes = new ByteArrayOutputStream(20);
+        // 20 bytes header + payload + 12 for v 4
+        var bytes = new ByteArrayOutputStream(20+12);
         var bs = new DataOutputStream(bytes);
         // write data to buffer
-        bs.writeInt(this.isAuthenticated() ? 2 : 1);    // version
+        bs.writeInt(version);    // version
+        if (version >= 3) {
+            // write marker
+            bs.writeInt(this.marker);
+        }
         bs.writeShort(1);  // command: READ
         bs.writeShort(1);  // category: answer
         bs.writeShort(0);  // status: OK
         bs.writeShort(0);  // bitfield: end of answer
-        bs.writeInt(offset);    // offset from the beginning
-        bs.writeInt(length);    // data length
+        if (this.version < 4) {
+            bs.writeInt((int)offset);    // offset from the beginning
+            bs.writeInt((int)length);    // data length
+        } else {
+            bs.writeLong(offset);
+            bs.writeLong(length);
+        }
         bs.flush();
         // scattered IO
         var ans = new ByteBuffer[data.length+1];
@@ -98,11 +119,15 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
 
     @Override
     public void notFound() throws Exception {
-        // 12 bytes packet
-        var bytes = new ByteArrayOutputStream(20);
+        // 12 bytes packet + 4 for v 3
+        var bytes = new ByteArrayOutputStream(20+4);
         var bs = new DataOutputStream(bytes);
         // write data to buffer
-        bs.writeInt(this.isAuthenticated() ? 2 : 1);    // version
+        bs.writeInt(this.version);    // version
+        if (this.version >= 3) {
+            // write marker
+            bs.writeInt(this.marker);
+        }
         bs.writeShort(1);  // command: WRITE
         bs.writeShort(1);  // category: answer
         bs.writeShort(1);  // status: ERRORE
@@ -114,10 +139,10 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
     public static void handle(Executor executor, SocketChannel sc, DataInputStream din, int version, Identity user, int marker) throws Exception {
         SimpleBinaryHandler.checkCategory(din);
         String path = SimpleBinaryHandler.readString(din);
-        int begin = din.readInt();
-        int len = din.readInt();
+        long begin = version < 4 ? din.readInt() : din.readLong();
+        long len   = version < 4 ? din.readInt() : din.readLong();
         var cmd = new ReadCommand(new Path(path), begin, len);
-        var schedulable = new SimpleBinarySchedulableReadCommand(cmd, sc);
+        var schedulable = new SimpleBinarySchedulableReadCommand(cmd, sc, version, marker);
         schedulable.setUser(user);
         executor.scheduleExecution(schedulable);
     }

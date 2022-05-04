@@ -99,7 +99,7 @@ public class SimpleBinarySchedulableAppendCommand extends SchedulableAppendComma
     public static void handle(Executor executor, SocketChannel sc, DataInputStream din, int version, Identity user, int marker) throws Exception {
         SimpleBinaryHandler.checkCategory(din);
         var path = new Path(SimpleBinaryHandler.readString(din));
-        var length = din.readInt();
+        var length = version < 4 ? din.readInt() : din.readLong();
         var read = 0;
         var result = new Result();
         var success = true;
@@ -110,7 +110,7 @@ public class SimpleBinarySchedulableAppendCommand extends SchedulableAppendComma
             var buffer = wrapper.get();
             // how many bytes to read now?
             var remainder = length - read;
-            var toRead = Math.min(remainder, buffer.remaining());
+            var toRead = (int)Math.min(remainder, buffer.remaining());
             // read bytes
             var buf = new byte[toRead];
             var tmp = din.read(buf);

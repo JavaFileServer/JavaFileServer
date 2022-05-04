@@ -11,7 +11,7 @@ public abstract class SchedulableWriteCommand extends WriteCommand implements Sc
         super(cmd);
     }
 
-    protected SchedulableWriteCommand(Path path, ByteBuffer data, int offset, boolean sync) {
+    protected SchedulableWriteCommand(Path path, ByteBuffer data, long offset, boolean sync) {
         super(path, data, offset, sync);
     }
 

@@ -2,7 +2,6 @@ package it.sssupserver.app.handlers.simplebinaryhandler;
 
 import it.sssupserver.app.base.BufferManager;
 import it.sssupserver.app.base.Path;
-import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.users.Identity;
@@ -70,12 +69,16 @@ public class SimpleBinarySchedulableCreateCommand extends SchedulableCreateComma
         }
     }
 
-    private static void reply(SocketChannel sc, int version, boolean success) throws Exception {
+    private static void reply(SocketChannel sc, int version, int marker, boolean success) throws Exception {
         // 12 bytes header, no payload
         var bytes = new ByteArrayOutputStream(12);
         var bs = new DataOutputStream(bytes);
         // write data to buffer
         bs.writeInt(version);   // version
+        if (version >= 3) {
+            // add marker
+            bs.writeInt(marker);
+        }
         bs.writeShort(9);  // command: CREATE
         bs.writeShort(1);  // category: answer
         bs.writeBoolean(success);    // data bytes
@@ -93,14 +96,14 @@ public class SimpleBinarySchedulableCreateCommand extends SchedulableCreateComma
     public static void handle(Executor executor, SocketChannel sc, DataInputStream din, int version, Identity user, int marker) throws Exception {
         SimpleBinaryHandler.checkCategory(din);
         var path = new Path(SimpleBinaryHandler.readString(din));
-        var length = din.readInt();
+        var length = version < 4 ? din.readInt() :  din.readLong();
         var result = new Result();
 
         // get a buffer
         var wrapper = BufferManager.getBuffer();
         var buffer = wrapper.get();
         // how many bytes to read now?
-        var toRead = Math.min(length, buffer.remaining());
+        var toRead = (int)Math.min(length, buffer.remaining());
         // read bytes
         var buf = new byte[toRead];
         var tmp = din.read(buf);
@@ -118,12 +121,27 @@ public class SimpleBinarySchedulableCreateCommand extends SchedulableCreateComma
         executor.scheduleExecution(schedulable);
         // done?
         if (!result.success()) {
-            reply(sc, version, false);
+            // must consume all data
+            reply(sc, version, marker, false);
+            try (var w = BufferManager.getBuffer()) {
+                buffer = w.get();
+                do {
+                    toRead = (int)Math.min(length, buffer.remaining());
+                    buffer.limit(toRead);
+                    while (buffer.hasRemaining()) {
+                        if (sc.read(buffer) <= 0) {
+                            throw new Exception("Bad read");
+                        }
+                    }
+                    buffer.clear();
+                    length += toRead;
+                } while (length != offset);
+            }
         } else if (length != offset) {
             var success = SimpleBinarySchedulableWriteCommand.write(executor, din, user, path, offset, length-offset);
-            reply(sc, version, success);
+            reply(sc, version, marker, success);
         } else {
-            reply(sc, version, true);
+            reply(sc, version, marker, true);
         }
     }
 
