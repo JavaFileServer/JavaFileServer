@@ -84,7 +84,7 @@ public class SimpleBinaryHandler implements RequestHandler {
                             SimpleBinarySchedulableCreateOrReplaceCommand.handle(executor, schannel, din, version, user, marker);
                             break;
                         case 3:
-                            SimpleBinarySchedulableWriteCommand.handle(executor, schannel, din, version, user, marker);
+                            SimpleBinarySchedulableExistsCommand.handle(executor, schannel, din, version, user, marker);
                             break;
                         case 4:
                             SimpleBinarySchedulableTruncateCommand.handle(executor, schannel, din, version, user, marker);
