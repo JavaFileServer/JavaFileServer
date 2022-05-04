@@ -26,6 +26,7 @@ import it.sssupclient.app.command.Delete;
 import it.sssupclient.app.command.Exists;
 import it.sssupclient.app.command.List;
 import it.sssupclient.app.command.Mkdir;
+import it.sssupclient.app.command.Move;
 import it.sssupclient.app.command.Read;
 import it.sssupclient.app.command.Scheduler;
 import it.sssupclient.app.command.Truncate;
@@ -96,6 +97,7 @@ public class App
             new Truncate(),
             new Delete(),
             new Mkdir(),
+            new Move(),
         };
         for (var cmd : cmds) {
             commands.put(cmd.getName(), cmd);
