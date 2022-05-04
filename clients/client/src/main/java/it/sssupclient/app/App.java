@@ -73,6 +73,7 @@ public class App
         } catch (Exception e) {
             System.err.println("Error occurred while parsing command " + command.getName());
             command.printHelp("\t");
+            System.exit(1);
         }
         var sc = connect();
         var scheduler = new Scheduler(sc);
