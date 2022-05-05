@@ -2,14 +2,40 @@ package it.sssupclient.app;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 public class Helpers {
     public static void panic(String error) {
         System.err.println("Panic: " + error);
         System.exit(1);
+    }
+
+    public static FileChannel readAllStdin() throws IOException {
+        var cwd = Paths.get("").toAbsolutePath();
+        var r = Channels.newChannel(System.in);
+        var input_file = File.createTempFile("input", null, cwd.toFile());
+        input_file.deleteOnExit();
+        var data = FileChannel.open(input_file.toPath(), StandardOpenOption.WRITE, StandardOpenOption.READ);
+        try (var wrapper = BufferManager.getBuffer()) {
+            var buffer = wrapper.get();
+            while (r.read(buffer) > 0)
+            {
+                buffer.flip();
+                data.write(buffer);
+                buffer.clear();
+            }
+        }
+        r.close();
+        data.position(0L);
+        return data;
     }
 
     static void writeAll(SocketChannel sc, ByteBuffer[] buffers) {

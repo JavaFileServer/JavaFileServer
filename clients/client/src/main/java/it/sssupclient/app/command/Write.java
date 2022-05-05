@@ -29,21 +29,25 @@ public class Write implements Command {
             throw new InvalidArgumentsException("Missing required arguments");
         }
         var file = args[0];
-        var cwd = Paths.get("").toAbsolutePath();
-        var src = cwd.resolve(file);
-        if (!Files.exists(src)) {
-            throw new InvalidArgumentsException("File " + src + " does not exist.");
+        if (file.equals("-")) {
+            this.fin = Helpers.readAllStdin();
+        } else {
+            var cwd = Paths.get("").toAbsolutePath();
+            var src = cwd.resolve(file);
+            if (!Files.exists(src)) {
+                throw new InvalidArgumentsException("File " + src + " does not exist.");
+            }
+            this.src = src;
+            // open file for creation
+            this.fin = FileChannel.open(this.src, StandardOpenOption.READ);
         }
         this.path = args[1];
-        this.src = src;
         if (args.length >= 3) {
             this.offset = Long.valueOf(args[2]);
             if (args.length >= 4) {
                 this.length = Long.valueOf(args[3]);
             }
         }
-        // open file for creation
-        this.fin = FileChannel.open(this.src, StandardOpenOption.READ);
     }
 
     @Override
