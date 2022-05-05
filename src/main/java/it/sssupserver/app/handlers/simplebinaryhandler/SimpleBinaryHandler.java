@@ -47,87 +47,91 @@ public class SimpleBinaryHandler implements RequestHandler {
                     // Not optimal but at least work
                     var schannel = ss.accept();
 
-                    try {
-                        int version;
-                        Identity user = null;
-                        int marker = 0;
-                        short type = 0;
-                        switch (version = SimpleBinaryHelper.readInt(schannel)) {
-                        case 1: // no special parameters
-                            break;
-                        case 2: // username available
-                            {
-                                var username = SimpleBinaryHelper.readString(schannel);
-                                var hash = username.hashCode();
-                                user = new Identity(username, hash);
-                            }
-                            break;
-                        case 3: // username and marker
-                            {
-                                marker = SimpleBinaryHelper.readInt(schannel);
-                                var username = SimpleBinaryHelper.readString(schannel);
-                                var hash = username.hashCode();
-                                user = new Identity(username, hash);
-                            }
-                            break;
-                        default:
-                            throw new Exception("Unknown message version: " + version);
-                        }
-
-                        switch (type = SimpleBinaryHelper.readShort(schannel)) {
-                            case 1:
-                            SimpleBinarySchedulableReadCommand.handle(executor, schannel, version, user, marker);
-                            break;
-                        case 2:
-                            SimpleBinarySchedulableCreateOrReplaceCommand.handle(executor, schannel, version, user, marker);
-                            break;
-                        case 3:
-                            SimpleBinarySchedulableExistsCommand.handle(executor, schannel, version, user, marker);
-                            break;
-                        case 4:
-                            SimpleBinarySchedulableTruncateCommand.handle(executor, schannel, version, user, marker);
-                            break;
-                        case 5:
-                            SimpleBinarySchedulableAppendCommand.handle(executor, schannel, version, user, marker);
-                            break;
-                        case 6:
-                            SimpleBinarySchedulableDeleteCommand.handle(executor, schannel, version, user, marker);
-                            break;
-                        case 7:
-                            SimpleBinarySchedulableListCommand.handle(executor, schannel, version, user, marker);
-                            break;
-                        case 8:
-                            SimpleBinarySchedulableWriteCommand.handle(executor, schannel, version, user, marker);
-                            break;
-                        case 9:
-                            SimpleBinarySchedulableCreateCommand.handle(executor, schannel, version, user, marker);
-                            break;
-                        case 10:
-                            SimpleBinarySchedulableCopyCommand.handle(executor, schannel, version, user, marker);
-                            break;
-                        case 11:
-                            SimpleBinarySchedulableMoveCommand.handle(executor, schannel, version, user, marker);
-                            break;
-                        case 12:
-                            SimpleBinarySchedulableMkdirCommand.handle(executor, schannel, version, user, marker);
-                            break;
-                        default:
-                            throw new Exception("Unknown message type: " + type);
-                        }
-
-                    } catch (Exception e) {
-                        System.err.println("Error occurred while parsing command: " + e);
-                        String stackTrace = ""; int i=0;
-                        for (var st : e.getStackTrace()) {
-                            stackTrace += ++i + ") " + st.toString() + "\n";
-                        }
-                        System.err.println("Error occurred while scheduling command" + e.getMessage() + "\n|> stacktrace: " + stackTrace);
-                    }
+                    handleClient(schannel);
                 }
             } catch (ClosedByInterruptException e) {
                 System.err.println("Listener interrupted!");
             } catch (Exception e) {
                 System.err.println("Listener failed to initialize " + e);
+            }
+        }
+
+        private void handleClient(SocketChannel schannel) {
+            try {
+                int version;
+                Identity user = null;
+                int marker = 0;
+                short type = 0;
+                switch (version = SimpleBinaryHelper.readInt(schannel)) {
+                case 1: // no special parameters
+                    break;
+                case 2: // username available
+                    {
+                        var username = SimpleBinaryHelper.readString(schannel);
+                        var hash = username.hashCode();
+                        user = new Identity(username, hash);
+                    }
+                    break;
+                case 3: // username and marker
+                    {
+                        marker = SimpleBinaryHelper.readInt(schannel);
+                        var username = SimpleBinaryHelper.readString(schannel);
+                        var hash = username.hashCode();
+                        user = new Identity(username, hash);
+                    }
+                    break;
+                default:
+                    throw new Exception("Unknown message version: " + version);
+                }
+
+                switch (type = SimpleBinaryHelper.readShort(schannel)) {
+                    case 1:
+                    SimpleBinarySchedulableReadCommand.handle(executor, schannel, version, user, marker);
+                    break;
+                case 2:
+                    SimpleBinarySchedulableCreateOrReplaceCommand.handle(executor, schannel, version, user, marker);
+                    break;
+                case 3:
+                    SimpleBinarySchedulableExistsCommand.handle(executor, schannel, version, user, marker);
+                    break;
+                case 4:
+                    SimpleBinarySchedulableTruncateCommand.handle(executor, schannel, version, user, marker);
+                    break;
+                case 5:
+                    SimpleBinarySchedulableAppendCommand.handle(executor, schannel, version, user, marker);
+                    break;
+                case 6:
+                    SimpleBinarySchedulableDeleteCommand.handle(executor, schannel, version, user, marker);
+                    break;
+                case 7:
+                    SimpleBinarySchedulableListCommand.handle(executor, schannel, version, user, marker);
+                    break;
+                case 8:
+                    SimpleBinarySchedulableWriteCommand.handle(executor, schannel, version, user, marker);
+                    break;
+                case 9:
+                    SimpleBinarySchedulableCreateCommand.handle(executor, schannel, version, user, marker);
+                    break;
+                case 10:
+                    SimpleBinarySchedulableCopyCommand.handle(executor, schannel, version, user, marker);
+                    break;
+                case 11:
+                    SimpleBinarySchedulableMoveCommand.handle(executor, schannel, version, user, marker);
+                    break;
+                case 12:
+                    SimpleBinarySchedulableMkdirCommand.handle(executor, schannel, version, user, marker);
+                    break;
+                default:
+                    throw new Exception("Unknown message type: " + type);
+                }
+
+            } catch (Exception e) {
+                System.err.println("Error occurred while parsing command: " + e);
+                String stackTrace = ""; int i=0;
+                for (var st : e.getStackTrace()) {
+                    stackTrace += ++i + ") " + st.toString() + "\n";
+                }
+                System.err.println("Error occurred while scheduling command" + e.getMessage() + "\n|> stacktrace: " + stackTrace);
             }
         }
     }
