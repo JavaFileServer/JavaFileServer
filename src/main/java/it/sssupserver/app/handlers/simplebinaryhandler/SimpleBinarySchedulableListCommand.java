@@ -55,6 +55,8 @@ public class SimpleBinarySchedulableListCommand extends SchedulableListCommand {
         bs.flush();
         // now data can be sent
         this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
+        // close connection
+        this.out.close();
     }
 
     public void notFound() throws Exception {

@@ -115,6 +115,8 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         }
         // now data can be sent
         this.out.write(ans);
+        // close connection
+        this.out.close();
     }
 
     @Override
@@ -134,6 +136,8 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         bs.writeShort(0);  // padding
         // now data can be sent
         this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
+        // close connection
+        this.out.close();
     }
 
     public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {

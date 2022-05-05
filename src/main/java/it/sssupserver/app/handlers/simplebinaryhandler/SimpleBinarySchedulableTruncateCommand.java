@@ -49,6 +49,8 @@ public class SimpleBinarySchedulableTruncateCommand extends SchedulableTruncateC
         bs.flush();
         // now data can be sent
         this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
+        // close connection
+        this.out.close();
     }
 
     public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {

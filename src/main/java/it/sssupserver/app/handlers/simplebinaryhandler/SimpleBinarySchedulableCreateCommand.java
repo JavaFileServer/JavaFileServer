@@ -86,6 +86,8 @@ public class SimpleBinarySchedulableCreateCommand extends SchedulableCreateComma
         bs.flush();
         // now data can be sent
         sc.write(ByteBuffer.wrap(bytes.toByteArray()));
+        // close connection
+        sc.close();
     }
 
     /**

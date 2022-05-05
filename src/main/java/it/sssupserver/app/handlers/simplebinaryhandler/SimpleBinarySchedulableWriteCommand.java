@@ -95,6 +95,8 @@ public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand
         bs.flush();
         // now data can be sent
         sc.write(ByteBuffer.wrap(bytes.toByteArray()));
+        // close connection
+        sc.close();
     }
 
     public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {

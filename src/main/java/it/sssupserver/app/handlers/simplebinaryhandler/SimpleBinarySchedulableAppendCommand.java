@@ -94,6 +94,8 @@ public class SimpleBinarySchedulableAppendCommand extends SchedulableAppendComma
         bs.flush();
         // now data can be sent
         sc.write(ByteBuffer.wrap(bytes.toByteArray()));
+        // close connection
+        sc.close();
     }
 
     public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
