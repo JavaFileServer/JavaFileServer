@@ -1,7 +1,9 @@
 package it.sssupclient.app.command;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
@@ -21,6 +23,7 @@ public class Read implements Command {
     private long offset, length;
     private Path dest;
     private FileChannel fout;
+    private boolean toStdout; 
 
     @Override
     public void parse(int version, String username, String[] args) throws Exception {
@@ -31,20 +34,28 @@ public class Read implements Command {
         }
         var file = args[0];
         var cwd = Paths.get("").toAbsolutePath();
-        var dest = cwd.resolve(file);
-        if (Files.exists(dest)) {
-            throw new InvalidArgumentsException("File " + dest + " already exists.");
+        if (file.equals("-")) {
+            // write to stdout
+            this.toStdout = true;
+            var download_file = File.createTempFile("download", null, cwd.toFile());
+            download_file.deleteOnExit();
+            this.dest = download_file.toPath();
+            this.fout = FileChannel.open(this.dest,  StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
+        } else {
+            var dest = cwd.resolve(file);
+            if (Files.exists(dest)) {
+                throw new InvalidArgumentsException("File " + dest + " already exists.");
+            }
+            this.dest = dest;
+            this.fout = FileChannel.open(this.dest, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
         }
         this.path = args[1];
-        this.dest = dest;
         if (args.length >= 3) {
             this.length = Long.valueOf(args[2]);
         }
         if (args.length >= 4) {
             this.offset = Long.valueOf(args[3]);
         }
-        // open file for creation
-        this.fout = FileChannel.open(this.dest, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.SPARSE);
     }
 
     @Override
@@ -97,6 +108,15 @@ public class Read implements Command {
                     buffer.clear();
                     read += toRead;
                 }
+            }
+            // all data read: print it no stdout
+            if (last && this.toStdout) {
+                var w = Channels.newChannel(System.out);
+                this.fout.position(0L);
+                this.fout.transferTo(0, this.fout.size(), w);
+                this.fout.truncate(0);
+                this.fout.close();
+                Files.delete(this.dest);
             }
             break;
         case 1:
