@@ -36,7 +36,7 @@ public class Scheduler {
         });
     }
 
-    public void parse(SocketChannel sc) throws Exception {
+    public void parse() throws Exception {
         boolean done;
         do {
             var version = Helpers.readInt(sc);

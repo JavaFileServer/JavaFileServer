@@ -72,7 +72,7 @@ public class App
         var sc = connect();
         var scheduler = new Scheduler(sc);
         command.exec(sc, scheduler);
-        scheduler.parse(sc);
+        scheduler.parse();
     }
 
     static void addCommmands() {
