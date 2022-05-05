@@ -1,6 +1,5 @@
 package it.sssupserver.app.executors;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import it.sssupserver.app.executors.samples.*;
