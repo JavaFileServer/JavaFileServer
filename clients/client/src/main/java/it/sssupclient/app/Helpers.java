@@ -75,6 +75,9 @@ public class Helpers {
 
     public static String readString(SocketChannel sc) {
         var length = readInt(sc);
+        if (length == 0) {
+            return "";
+        }
         try (var wrapper = readBytes(sc, length);)
         {
             var data = wrapper.get();
