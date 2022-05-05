@@ -102,6 +102,8 @@ public class Read implements Command {
         case 1:
             Helpers.checkPadding(sc, 2);
             System.out.println("File not found");
+            Files.deleteIfExists(this.dest);
+            last = true;
             break;
         default:
             Helpers.panic("Invalid status: " + status);
