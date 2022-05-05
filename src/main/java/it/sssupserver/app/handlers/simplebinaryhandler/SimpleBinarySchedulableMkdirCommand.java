@@ -44,9 +44,9 @@ public class SimpleBinarySchedulableMkdirCommand extends SchedulableMkdirCommand
         this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
     }
 
-    public static void handle(Executor executor, SocketChannel sc, DataInputStream din, int version, Identity user, int marker) throws Exception {
-        SimpleBinaryHandler.checkCategory(din);
-        var path = SimpleBinaryHandler.readString(din);
+    public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
+        SimpleBinaryHandler.checkCategory(sc);
+        var path = SimpleBinaryHelper.readString(sc);
         var cmd = new MkdirCommand(new Path(path));
         var schedulable = new SimpleBinarySchedulableMkdirCommand(cmd, sc);
         schedulable.setUser(user);

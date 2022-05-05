@@ -1,7 +1,6 @@
 package it.sssupserver.app.handlers.simplebinaryhandler;
 
 import it.sssupserver.app.base.Path;
-import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.users.Identity;
@@ -52,12 +51,12 @@ public class SimpleBinarySchedulableTruncateCommand extends SchedulableTruncateC
         this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
     }
 
-    public static void handle(Executor executor, SocketChannel sc, DataInputStream din, int version, Identity user, int marker) throws Exception {
-        SimpleBinaryHandler.checkCategory(din);
-        String path = SimpleBinaryHandler.readString(din);
+    public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
+        SimpleBinaryHandler.checkCategory(sc);
+        String path = SimpleBinaryHelper.readString(sc);
         long length = 0;
         if (version >= 4) {
-            length = din.readLong();
+            length = SimpleBinaryHelper.readLong(sc);
         }
         var schedulable = new SimpleBinarySchedulableTruncateCommand(new Path(path), length, version, marker, sc);
         schedulable.setUser(user);

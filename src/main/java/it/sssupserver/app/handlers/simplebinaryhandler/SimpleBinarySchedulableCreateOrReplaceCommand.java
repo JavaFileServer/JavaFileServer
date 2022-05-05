@@ -84,25 +84,23 @@ public class SimpleBinarySchedulableCreateOrReplaceCommand extends SchedulableCr
         sc.write(ByteBuffer.wrap(bytes.toByteArray()));
     }
 
-    public static void handle(Executor executor, SocketChannel sc, DataInputStream din, int version, Identity user, int marker) throws Exception {
-        SimpleBinaryHandler.checkCategory(din);
-        var path = new Path(SimpleBinaryHandler.readString(din));
-        var length = din.readInt();
+    public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
+        SimpleBinaryHandler.checkCategory(sc);
+        var path = new Path(SimpleBinaryHelper.readString(sc));
+        var length = version < 4 ? SimpleBinaryHelper.readInt(sc) : SimpleBinaryHelper.readLong(sc);
         var result = new Result();
 
         // get a buffer
         var wrapper = BufferManager.getBuffer();
         var buffer = wrapper.get();
         // how many bytes to read now?
-        var toRead = Math.min(length, buffer.remaining());
-        // read bytes
-        var buf = new byte[toRead];
-        var tmp = din.read(buf);
-        // success?
-        if (tmp < 0) {
-            throw new Exception("Bad read");
-        }
-        buffer.put(buf, 0, tmp);
+        var toRead = (int)Math.min(length, buffer.remaining());
+        buffer.limit(toRead);
+        do {
+            if (sc.read(buffer) < 0) {
+                throw new Exception("Bad read");
+            }
+        } while (buffer.hasRemaining());
         // ready to read
         buffer.flip();
         var offset = buffer.remaining();
@@ -114,7 +112,7 @@ public class SimpleBinarySchedulableCreateOrReplaceCommand extends SchedulableCr
         if (!result.success()) {
             reply(sc, version, false);
         } else if (length != offset) {
-            var success = SimpleBinarySchedulableWriteCommand.write(executor, din, user, path, offset, length-offset);
+            var success = SimpleBinarySchedulableWriteCommand.write(executor, sc, user, path, offset, length-offset);
             reply(sc, version, success);
         } else {
             reply(sc, version, true);

@@ -44,10 +44,10 @@ public class SimpleBinarySchedulableCopyCommand extends SchedulableCopyCommand {
         this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
     }
 
-    public static void handle(Executor executor, SocketChannel sc, DataInputStream din, int version, Identity user, int marker) throws Exception {
-        SimpleBinaryHandler.checkCategory(din);
-        var src = SimpleBinaryHandler.readString(din);
-        var dst = SimpleBinaryHandler.readString(din);
+    public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
+        SimpleBinaryHandler.checkCategory(sc);
+        var src = SimpleBinaryHelper.readString(sc);
+        var dst = SimpleBinaryHelper.readString(sc);
         var cmd = new CopyCommand(new Path(src), new Path(dst));
         var schedulable = new SimpleBinarySchedulableCopyCommand(cmd, sc);
         schedulable.setUser(user);

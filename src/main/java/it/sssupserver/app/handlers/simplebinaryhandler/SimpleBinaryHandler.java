@@ -7,6 +7,7 @@ import it.sssupserver.app.executors.Executor;
 import java.net.*;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.io.*;
 
@@ -45,29 +46,26 @@ public class SimpleBinaryHandler implements RequestHandler {
                     // https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/channels/SocketChannel.html
                     // Not optimal but at least work
                     var schannel = ss.accept();
-                    var socket = schannel.socket();
-                    var in = socket.getInputStream();
-                    var din = new DataInputStream(in);
 
                     try {
                         int version;
                         Identity user = null;
                         int marker = 0;
                         short type = 0;
-                        switch (version = din.readInt()) {
+                        switch (version = SimpleBinaryHelper.readInt(schannel)) {
                         case 1: // no special parameters
                             break;
                         case 2: // username available
                             {
-                                var username = readString(din);
+                                var username = SimpleBinaryHelper.readString(schannel);
                                 var hash = username.hashCode();
                                 user = new Identity(username, hash);
                             }
                             break;
                         case 3: // username and marker
                             {
-                                marker = din.readInt();
-                                var username = readString(din);
+                                marker = SimpleBinaryHelper.readInt(schannel);
+                                var username = SimpleBinaryHelper.readString(schannel);
                                 var hash = username.hashCode();
                                 user = new Identity(username, hash);
                             }
@@ -76,42 +74,42 @@ public class SimpleBinaryHandler implements RequestHandler {
                             throw new Exception("Unknown message version: " + version);
                         }
 
-                        switch (type = din.readShort()) {
+                        switch (type = SimpleBinaryHelper.readShort(schannel)) {
                             case 1:
-                            SimpleBinarySchedulableReadCommand.handle(executor, schannel, din, version, user, marker);
+                            SimpleBinarySchedulableReadCommand.handle(executor, schannel, version, user, marker);
                             break;
                         case 2:
-                            SimpleBinarySchedulableCreateOrReplaceCommand.handle(executor, schannel, din, version, user, marker);
+                            SimpleBinarySchedulableCreateOrReplaceCommand.handle(executor, schannel, version, user, marker);
                             break;
                         case 3:
-                            SimpleBinarySchedulableExistsCommand.handle(executor, schannel, din, version, user, marker);
+                            SimpleBinarySchedulableExistsCommand.handle(executor, schannel, version, user, marker);
                             break;
                         case 4:
-                            SimpleBinarySchedulableTruncateCommand.handle(executor, schannel, din, version, user, marker);
+                            SimpleBinarySchedulableTruncateCommand.handle(executor, schannel, version, user, marker);
                             break;
                         case 5:
-                            SimpleBinarySchedulableAppendCommand.handle(executor, schannel, din, version, user, marker);
+                            SimpleBinarySchedulableAppendCommand.handle(executor, schannel, version, user, marker);
                             break;
                         case 6:
-                            SimpleBinarySchedulableDeleteCommand.handle(executor, schannel, din, version, user, marker);
+                            SimpleBinarySchedulableDeleteCommand.handle(executor, schannel, version, user, marker);
                             break;
                         case 7:
-                            SimpleBinarySchedulableListCommand.handle(executor, schannel, din, version, user, marker);
+                            SimpleBinarySchedulableListCommand.handle(executor, schannel, version, user, marker);
                             break;
                         case 8:
-                            SimpleBinarySchedulableWriteCommand.handle(executor, schannel, din, version, user, marker);
+                            SimpleBinarySchedulableWriteCommand.handle(executor, schannel, version, user, marker);
                             break;
                         case 9:
-                            SimpleBinarySchedulableCreateCommand.handle(executor, schannel, din, version, user, marker);
+                            SimpleBinarySchedulableCreateCommand.handle(executor, schannel, version, user, marker);
                             break;
                         case 10:
-                            SimpleBinarySchedulableCopyCommand.handle(executor, schannel, din, version, user, marker);
+                            SimpleBinarySchedulableCopyCommand.handle(executor, schannel, version, user, marker);
                             break;
                         case 11:
-                            SimpleBinarySchedulableMoveCommand.handle(executor, schannel, din, version, user, marker);
+                            SimpleBinarySchedulableMoveCommand.handle(executor, schannel, version, user, marker);
                             break;
                         case 12:
-                            SimpleBinarySchedulableMkdirCommand.handle(executor, schannel, din, version, user, marker);
+                            SimpleBinarySchedulableMkdirCommand.handle(executor, schannel, version, user, marker);
                             break;
                         default:
                             throw new Exception("Unknown message type: " + type);
@@ -192,6 +190,14 @@ public class SimpleBinaryHandler implements RequestHandler {
     public static void checkCategory(DataInputStream din) throws Exception
     {
         short category = din.readShort();
+        if (category != 0) {
+            throw new Exception("Category must be 0 for requests, foud: "+ category);
+        }
+    }
+
+    public static void checkCategory(SocketChannel sc) throws Exception
+    {
+        short category = SimpleBinaryHelper.readShort(sc);
         if (category != 0) {
             throw new Exception("Category must be 0 for requests, foud: "+ category);
         }

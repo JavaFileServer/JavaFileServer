@@ -17,7 +17,7 @@ import java.util.concurrent.Semaphore;
  * Chunks must be written one by one because underlying file size is
  * unknown. This makes this operation less efficient than general bulk
  * write because Executor(s) do not grant ordering in received operations
- * so 
+ * so
  */
 public class SimpleBinarySchedulableAppendCommand extends SchedulableAppendCommand implements AutoCloseable {
     private static class Result {
@@ -96,10 +96,10 @@ public class SimpleBinarySchedulableAppendCommand extends SchedulableAppendComma
         sc.write(ByteBuffer.wrap(bytes.toByteArray()));
     }
 
-    public static void handle(Executor executor, SocketChannel sc, DataInputStream din, int version, Identity user, int marker) throws Exception {
-        SimpleBinaryHandler.checkCategory(din);
-        var path = new Path(SimpleBinaryHandler.readString(din));
-        var length = version < 4 ? din.readInt() : din.readLong();
+    public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
+        SimpleBinaryHandler.checkCategory(sc);
+        var path = new Path(SimpleBinaryHelper.readString(sc));
+        var length = version < 4 ? SimpleBinaryHelper.readInt(sc) : SimpleBinaryHelper.readLong(sc);
         var read = 0;
         var result = new Result();
         var success = true;
@@ -111,14 +111,12 @@ public class SimpleBinarySchedulableAppendCommand extends SchedulableAppendComma
             // how many bytes to read now?
             var remainder = length - read;
             var toRead = (int)Math.min(remainder, buffer.remaining());
-            // read bytes
-            var buf = new byte[toRead];
-            var tmp = din.read(buf);
-            // success?
-            if (tmp < 0) {
-                throw new Exception("Bad read");
-            }
-            buffer.put(buf, 0, tmp);
+            buffer.limit(toRead);
+            do {
+                if (sc.read(buffer) < 0) {
+                    throw new Exception("Bad read");
+                }
+            } while (buffer.hasRemaining());
             // ready to read
             buffer.flip();
             // increase counters

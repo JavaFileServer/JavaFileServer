@@ -72,9 +72,9 @@ public class SimpleBinarySchedulableListCommand extends SchedulableListCommand {
         this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
     }
 
-    public static void handle(Executor executor, SocketChannel sc, DataInputStream din, int version, Identity user, int marker) throws Exception {
-        SimpleBinaryHandler.checkCategory(din);
-        var path = SimpleBinaryHandler.readString(din);
+    public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
+        SimpleBinaryHandler.checkCategory(sc);
+        var path = SimpleBinaryHelper.readString(sc);
         var cmd = new ListCommand(new Path(path));
         var schedulable = new SimpleBinarySchedulableListCommand(cmd, sc);
         schedulable.setUser(user);

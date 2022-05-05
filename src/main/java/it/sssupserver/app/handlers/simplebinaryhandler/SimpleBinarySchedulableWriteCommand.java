@@ -1,7 +1,6 @@
 package it.sssupserver.app.handlers.simplebinaryhandler;
 
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -98,16 +97,16 @@ public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand
         sc.write(ByteBuffer.wrap(bytes.toByteArray()));
     }
 
-    public static void handle(Executor executor, SocketChannel sc, DataInputStream din, int version, Identity user, int marker) throws Exception {
-        SimpleBinaryHandler.checkCategory(din);
-        var path = new Path(SimpleBinaryHandler.readString(din));
-        var offset = din.readInt();
-        var length = din.readInt();
-        var success = write(executor, din, user, path, offset, length);
+    public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
+        SimpleBinaryHandler.checkCategory(sc);
+        var path = new Path(SimpleBinaryHelper.readString(sc));
+        var offset = SimpleBinaryHelper.readInt(sc);
+        var length = SimpleBinaryHelper.readInt(sc);
+        var success = write(executor, sc, user, path, offset, length);
         reply(sc, version, marker, success);
     }
 
-    public static boolean write(Executor executor, DataInputStream din, Identity user, Path path, long offset, long length) throws IOException, Exception {
+    public static boolean write(Executor executor, SocketChannel sc, Identity user, Path path, long offset, long length) throws IOException, Exception {
         var read = 0;
         var nChunks = 0;
         var res = new Result();
@@ -122,13 +121,12 @@ public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand
             var remainder = length - read;
             var toRead = (int)Math.min(remainder, buffer.remaining());
             // read bytes
-            var buf = new byte[toRead];
-            var tmp = din.read(buf);
-            // success?
-            if (tmp < 0) {
-                throw new Exception("Bad read");
-            }
-            buffer.put(buf, 0, tmp);
+            buffer.limit(toRead);
+            do {
+                if (sc.read(buffer) < 0) {
+                    throw new Exception("Bad read");
+                }
+            } while (buffer.hasRemaining());
             // ready to read
             buffer.flip();
             // prepare command

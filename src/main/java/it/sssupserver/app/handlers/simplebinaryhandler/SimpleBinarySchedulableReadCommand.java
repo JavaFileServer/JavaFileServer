@@ -136,11 +136,11 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
     }
 
-    public static void handle(Executor executor, SocketChannel sc, DataInputStream din, int version, Identity user, int marker) throws Exception {
-        SimpleBinaryHandler.checkCategory(din);
-        String path = SimpleBinaryHandler.readString(din);
-        long begin = version < 4 ? din.readInt() : din.readLong();
-        long len   = version < 4 ? din.readInt() : din.readLong();
+    public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
+        SimpleBinaryHandler.checkCategory(sc);
+        String path = SimpleBinaryHelper.readString(sc);
+        long begin = version < 4 ? SimpleBinaryHelper.readInt(sc) : SimpleBinaryHelper.readLong(sc);
+        long len   = version < 4 ? SimpleBinaryHelper.readInt(sc) : SimpleBinaryHelper.readLong(sc);
         var cmd = new ReadCommand(new Path(path), begin, len);
         var schedulable = new SimpleBinarySchedulableReadCommand(cmd, sc, version, marker);
         schedulable.setUser(user);
