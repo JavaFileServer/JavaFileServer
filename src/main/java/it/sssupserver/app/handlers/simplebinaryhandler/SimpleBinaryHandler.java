@@ -47,7 +47,8 @@ public class SimpleBinaryHandler implements RequestHandler {
                     // Not optimal but at least work
                     var schannel = ss.accept();
 
-                    handleClient(schannel);
+                    // Naive but working approach
+                    new Thread(() -> handleClient(schannel)).start();
                 }
             } catch (ClosedByInterruptException e) {
                 System.err.println("Listener interrupted!");
