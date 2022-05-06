@@ -1,7 +1,9 @@
 package it.sssupclient.app;
 
+import java.lang.reflect.Parameter;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -34,11 +36,12 @@ public class App
     static String host = "localhost";
     static int port = 5050;
     static SocketChannel connect() {
+        var address = new InetSocketAddress(host, port);
         try {
-            var sc = SocketChannel.open(new InetSocketAddress(host, port));
+            var sc = SocketChannel.open(address);
             return sc;
         } catch (Exception e) {
-            System.err.println("Cannot connect: " + e);
+            System.err.println("Cannot connect to " + address + ": " + e);
             System.exit(1);
         }
         return null; // never reached
@@ -98,6 +101,9 @@ public class App
     static void help() {
         System.err.println("Usage:");
         System.err.println("\tcommand [args]");
+        System.err.println("\tGeneric parameters (i.e. valid for any command):");
+        System.err.println("\t\t--host hostname: host name or address to connect at, default 'localhost'");
+        System.err.println("\t\t--port number: TCP port to connect at, default '5050'");
         System.err.println();
         System.err.println("\tAvailable commands:");
         for (var cmd : commands.entrySet()) {
@@ -118,8 +124,47 @@ public class App
         }
     }
 
+
+
+    static String[] extract_globals(String[] args) {
+        var ans = new ArrayList<String>();
+        boolean takeAll = false;
+        for (int i = 0; i < args.length; ++i) {
+            var a = args[i];
+            if (takeAll) {
+                ans.add(a);
+            } else if (a.equals("--")) {
+                takeAll = true;
+            } else if (a.startsWith("--")) {
+                var parameter = a.substring(2);
+                switch (parameter) {
+                    case "port":
+                        if (i + 1 == args.length) {
+                            panic("Missing value for parameter port");
+                        }
+                        port = Integer.parseInt(args[++i]);
+                        break;
+                    case "host":
+                        if (i + 1 == args.length) {
+                            panic("Missing value for parameter port");
+                        }
+                        host = args[++i];
+                        break;
+                    default:
+                        panic("Unknown parameter '" + parameter + "'");
+                        break;
+                }
+            } else {
+                ans.add(a);
+            }
+        }
+        return ans.stream().toArray(String[] ::new);
+    }
+
+
     public static void main( String[] args ) throws Exception
     {
+        args = extract_globals(args);
         addCommmands();
         //addHandlers();
         if (args.length == 0 || args[0].equals("--help")) {
