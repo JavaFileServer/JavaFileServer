@@ -39,6 +39,8 @@ public class UserTreeExecutor implements Executor {
     static int MAX_CHUNK_SIZE = 2 << 16;
 
     /**
+     * CURRENTLY UNUSED!!!
+     *
      * The executor will maintain a tree-structure
      * representing the handled file system.
      * This is necessary in order to avoid issues
