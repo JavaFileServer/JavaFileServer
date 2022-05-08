@@ -27,6 +27,8 @@ import it.sssupclient.app.command.Write;
  */
 public class App 
 {
+    static int protocol_version = 4;
+
     static void panic(String error) {
         System.err.println("Panic: " + error);
         System.exit(1);
@@ -119,7 +121,7 @@ public class App
             System.err.println("Unknow command: '" + cmd + "'");
             help();
         } else {
-            handleCommand(command, 1, null, args);
+            handleCommand(command, protocol_version, null, args);
         }
     }
 
