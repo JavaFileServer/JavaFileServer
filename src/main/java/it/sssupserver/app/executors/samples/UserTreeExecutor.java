@@ -6,20 +6,25 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.StandardOpenOption;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Optional;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.schedulables.*;
 import it.sssupserver.app.exceptions.ApplicationException;
 import it.sssupserver.app.exceptions.CommandNotSupportedException;
-import it.sssupserver.app.exceptions.InvalidIdentityException;
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.users.Identity;
 
@@ -33,30 +38,133 @@ public class UserTreeExecutor implements Executor {
 
     static int MAX_CHUNK_SIZE = 2 << 16;
 
-    //
-    private ConcurrentMap<java.nio.file.Path, Boolean> dirmap = new ConcurrentSkipListMap<>();
     /**
-     * Each user has access to a different folder.
+     * The executor will maintain a tree-structure
+     * representing the handled file system.
+     * This is necessary in order to avoid issues
+     * and race conditions with the MOVE command that
+     * would, in case it is operated on directory,
+     * require the invalidation of all its child items,
+     * action that could not be performed atomically
+     * with a concurrent map. 
      */
-    private java.nio.file.Path userDir(Identity user) throws InvalidIdentityException, ApplicationException {
-        var uDir = this.baseDir.resolve(user == null ? unknown_users : userdir_prefix + user.getId());
-        var error = new Object(){
-            public IOException exception;
-        };
-        if (dirmap.computeIfAbsent(uDir, (dir) -> {
-                if (!Files.exists(uDir, LinkOption.NOFOLLOW_LINKS)) {
-                    try {
-                        Files.createDirectory(dir);
-                    } catch (IOException e) {
-                        error.exception = e;
-                        return null;
-                    }
-                }
-                return true;
-            }) == null) {
-            throw new ApplicationException(error.exception);
-        };
+    private class FSItem {
+        public boolean isFile;
+        // filename
+        public String name;
+        // null is file
+        public ConcurrentMap<String, FSItem> children;
+        // null is file
+        public FileChannel file;
+        // required for special operations (i.e.: close, move)
+        public ReadWriteLock lock;
+        // if set to false data is invalid ad should be discarded
+        public boolean valid;
+        // last time it was used
+        public Instant lastUse;
+
+        // return the item associated with the given path
+        public FSItem traverse(Path path) {
+            if (path.isEmpty()) {
+                return this;
+            }
+            return null;
+        }
+    }
+
+    // This class represent the subtree of the machine FS
+    // 'owned' by a certain user.
+    // It is used internally by this Executor to maintain
+    // data associated to a specific user
+    private class UserFS {
+        // null for unauthenticated users, otherwise
+        // the user Id
+        public final Optional<Long> userId;
+        // path to the root folder for the specified user
+        public final java.nio.file.Path userDir;
+        // to effectively support risky operations like MOVE
+        public final ReadWriteLock lock = new ReentrantReadWriteLock();
+        // map paths to files
+        public final ConcurrentMap<java.nio.file.Path, java.nio.channels.FileChannel> filemap = new ConcurrentHashMap<>();
+        // time
+        public Instant lastAccess = Instant.now();
+
+        public class LockWrapper implements AutoCloseable {
+            private final Lock lock;
+            LockWrapper(Lock lock) {
+                this.lock = lock;
+                this.lock.lock();
+            }
+
+            @Override
+            public void close() {
+                this.lock.unlock();
+            }
+        }
+
+        public LockWrapper readLock() {
+            return new LockWrapper(lock.readLock());
+        }
+
+        public LockWrapper writeLock() {
+            return new LockWrapper(lock.writeLock());
+        }
+
+        public UserFS(Identity user) throws IOException {
+            this.userId = Optional.ofNullable(user != null ? user.getIdOrNull() : null);
+            this.userDir = getPathFromUser(user);
+        }
+
+        public UserFS() throws IOException {
+            this(null);
+        }
+    }
+
+    private java.nio.file.Path getPathFromUser(Identity user) throws IOException {
+        var uDir = this.baseDir.resolve(user == null ? unknown_users : userdir_prefix + user.getIdOrNull());
+        if (!Files.exists(uDir, LinkOption.NOFOLLOW_LINKS)) {
+            Files.createDirectory(uDir);
+        }
         return uDir;
+    }
+
+    // map user IDs to their root folder
+    private ConcurrentMap<Identity, UserFS> userFS = new ConcurrentSkipListMap<>();
+    private UserFS defaultFS;
+
+    private UserFS getUserFS(Identity user) throws ApplicationException {
+        if (defaultFS == null) {
+            try {
+                defaultFS = new UserFS();
+            } catch (IOException e) {
+                throw new ApplicationException("Error creating deafultFS", e);
+            }
+        }
+        try {
+            if (user == null || !user.isValid()) {
+                return defaultFS;
+            } else {
+                var flag = new Object(){
+                    public IOException error = null;
+                };
+                var ans = userFS.computeIfAbsent(user, (u) -> {
+                    UserFS fs;
+                    try {
+                        fs = new UserFS(user);
+                    } catch (IOException e) {
+                        flag.error = e;
+                        fs = null;
+                    }
+                    return fs;
+                });
+                if (ans == null) {
+                    throw new ApplicationException(flag.error);
+                }
+                return ans;
+            }
+        } catch (Exception e) {
+            throw new ApplicationException("Inconsistent state", e);
+        }
     }
 
     public UserTreeExecutor() throws Exception
@@ -106,209 +214,230 @@ public class UserTreeExecutor implements Executor {
 
     private void handleRead(SchedulableReadCommand command) throws ApplicationException {
         var user = command.getUser();
-        var uDir = userDir(user);
-        var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
+        var uFS = getUserFS(user);
+        var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
             var flag = new Object(){
                 public boolean found = false;
             };
-            if (this.filemap.computeIfPresent(path, (p, fin) -> {
-                try {
-                    flag.found = true;
-                    fin.position(command.getBegin());
-                    var remainder = fin.size() - fin.position();
-                    var toRead = command.getLen() != 0 ? command.getLen() : remainder;
-                    long read = 0;
-                    try (var wrapper = getBuffer()) {
-                        var buffer = wrapper.get();
-                        do {
-                            buffer.limit((int)Math.min(buffer.capacity(), toRead));
-                            var tmp = fin.read(buffer, command.getBegin() + read);
-                            if (tmp > 0) {
-                                read += tmp;
-                            } else {
-                                toRead = 0;
-                            }
-                            buffer.flip();
-                            toRead -= buffer.limit();
-                            if (toRead > 0) {
-                                try { command.partial(buffer); } catch (Exception ee) { }
-                            } else {
-                                try { command.reply(buffer); } catch (Exception ee) { }
-                            }
-                            buffer.clear();
-                        } while (toRead > 0);
+            try (var lock = uFS.readLock()) {
+                if (uFS.filemap.compute(path, (p, fin) -> {
+                    try {
+                        if (fin == null) {
+                            fin = FileChannel.open(p, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
+                        }
+                        flag.found = true;
+                        fin.position(command.getBegin());
+                        var remainder = fin.size() - fin.position();
+                        var toRead = command.getLen() != 0 ? command.getLen() : remainder;
+                        long read = 0;
+                        try (var wrapper = getBuffer()) {
+                            var buffer = wrapper.get();
+                            do {
+                                buffer.limit((int)Math.min(buffer.capacity(), toRead));
+                                var tmp = fin.read(buffer, command.getBegin() + read);
+                                if (tmp > 0) {
+                                    read += tmp;
+                                } else {
+                                    toRead = 0;
+                                }
+                                buffer.flip();
+                                toRead -= buffer.limit();
+                                if (toRead > 0) {
+                                    try { command.partial(buffer); } catch (Exception ee) { }
+                                } else {
+                                    try { command.reply(buffer); } catch (Exception ee) { }
+                                }
+                                buffer.clear();
+                            } while (toRead > 0);
+                        }
+                    } catch (Exception e) {
+                        try { fin.close(); } catch (Exception ee) { }
+                        return null;
                     }
-                } catch (Exception e) {
-                    try { fin.close(); } catch (Exception ee) { }
-                    return null;
+                    return fin;
+                }) == null && !flag.found) {
+                    try { command.notFound(); } catch (Exception ee) { }
                 }
-                return fin;
-            }) == null && !flag.found) {
-                try { command.notFound(); } catch (Exception ee) { }
             }
         });
     }
 
     private void handleCreateOrReplace(SchedulableCreateOrReplaceCommand command) throws ApplicationException {
         var user = command.getUser();
-        var uDir = userDir(user);
-        var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
+        var uFS = getUserFS(user);
+        var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
-            if (this.filemap.compute(path, (p, fout) -> {
-                if (fout == null) {
+            try (var lock = uFS.readLock()) {                
+                if (uFS.filemap.compute(path, (p, fout) -> {
+                    if (fout == null) {
+                        try {
+                            fout = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
+                        } catch (Exception e) {
+                            try { command.reply(false); } catch (Exception ee) { }
+                            return null;
+                        }
+                    }
                     try {
-                        fout = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
+                        var bytes = command.getData();
+                        fout.truncate(0).write(bytes);
+                        if (command.requireSync()) {
+                            fout.force(true);
+                        }
+                        try { command.reply(true); } catch (Exception ee) { }
                     } catch (Exception e) {
                         try { command.reply(false); } catch (Exception ee) { }
+                        try { fout.close(); } catch (Exception ee) { }
                         return null;
                     }
+                    return fout;
+                }) == null) {
+                    try { command.reply(false); } catch (Exception e) { }
                 }
-                try {
-                    var bytes = command.getData();
-                    fout.truncate(0).write(bytes);
-                    if (command.requireSync()) {
-                        fout.force(true);
-                    }
-                    try { command.reply(true); } catch (Exception ee) { }
-                } catch (Exception e) {
-                    try { command.reply(false); } catch (Exception ee) { }
-                    try { fout.close(); } catch (Exception ee) { }
-                    return null;
-                }
-                return fout;
-            }) == null) {
-                try { command.reply(false); } catch (Exception e) { }
             }
         });
     }
 
     private void handleTruncate(SchedulableTruncateCommand command) throws ApplicationException {
         var user = command.getUser();
-        var uDir = userDir(user);
-        var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
+        var uFS = getUserFS(user);
+        var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
-            if (this.filemap.compute(path, (p, fout) -> {
-                try {
-                    if (fout == null) {
-                        fout = FileChannel.open(path,  StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
-                    } else {
-                        fout.truncate(command.getLength());
+            try (var lock = uFS.readLock()) {
+                if (this.filemap.compute(path, (p, fout) -> {
+                    try {
+                        if (fout == null) {
+                            fout = FileChannel.open(path,  StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
+                        } else {
+                            fout.truncate(command.getLength());
+                        }
+                    } catch (IOException e) {
+                        try { command.reply(false); } catch (Exception ee) { }
+                        try { fout.close(); } catch (Exception ee) { }
+                        return null;
                     }
-                } catch (IOException e) {
-                    try { command.reply(false); } catch (Exception ee) { }
-                    try { fout.close(); } catch (Exception ee) { }
-                    return null;
+                    try { command.reply(true); } catch (Exception ee) { }
+                    return fout;
+                }) == null) {
+                    try { command.reply(false); } catch (Exception e) { }
                 }
-                try { command.reply(true); } catch (Exception ee) { }
-                return fout;
-            }) == null) {
-                try { command.reply(false); } catch (Exception e) { }
             }
         });
     }
 
     private void handleExists(SchedulableExistsCommand command) throws ApplicationException {
         var user = command.getUser();
-        var uDir = userDir(user);
-        var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
+        var uFS = getUserFS(user);
+        var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
-            if (this.filemap.computeIfPresent(path, (p, fout) -> {
-                try { command.reply(true); } catch (Exception e) { }
-                return fout;
-            }) == null) {
-                var exists = Files.exists(path, LinkOption.NOFOLLOW_LINKS);
-                try { command.reply(exists); } catch (Exception e) { }
+            try (var lock = uFS.readLock()) {
+                if (uFS.filemap.computeIfPresent(path, (p, fout) -> {
+                    try { command.reply(true); } catch (Exception e) { }
+                    return fout;
+                }) == null) {
+                    var exists = Files.exists(path, LinkOption.NOFOLLOW_LINKS);
+                    try { command.reply(exists); } catch (Exception e) { }
+                }
             }
         });
     }
 
     private void handleDelete(SchedulableDeleteCommand command) throws ApplicationException {
         var user = command.getUser();
-        var uDir = userDir(user);
-        var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
+        var uFS = getUserFS(user);
+        var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
-            if (this.filemap.compute(path, (p, fout) -> {
-                try {
-                    if (fout != null) {
-                        fout.close();
+            try (var lock = uFS.readLock()) {
+                if (this.filemap.compute(path, (p, fout) -> {
+                    try {
+                        if (fout != null) {
+                            fout.close();
+                        }
+                        var success = Files.deleteIfExists(path);
+                        try { command.reply(success); } catch (Exception ee) { }
+                    } catch (IOException e) {
+                        try { command.reply(false); } catch (Exception ee) { }
                     }
-                    var success = Files.deleteIfExists(path);
-                    try { command.reply(success); } catch (Exception ee) { }
-                } catch (IOException e) {
-                    try { command.reply(false); } catch (Exception ee) { }
+                    return null;
+                }) == null) {
+                    try { command.reply(false); } catch (Exception e) { }
                 }
-                return null;
-            }) == null) {
-                try { command.reply(false); } catch (Exception e) { }
             }
         });
     }
 
     private void handleAppend(SchedulableAppendCommand command) throws ApplicationException {
         var user = command.getUser();
-        var uDir = userDir(user);
-        var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
+        var uFS = getUserFS(user);
+        var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
-            if (this.filemap.computeIfPresent(path, (p, fout) -> {
-                try {
-                    var buffer = command.getData();
-                    fout.position(fout.size()).write(buffer);
-                    if (command.requireSync()) {
-                        fout.force(true);
+            try (var lock = uFS.readLock()) {
+                if (uFS.filemap.computeIfPresent(path, (p, fout) -> {
+                    try {
+                        var buffer = command.getData();
+                        fout.position(fout.size()).write(buffer);
+                        if (command.requireSync()) {
+                            fout.force(true);
+                        }
+                        try { command.reply(true); } catch (Exception ee) { }
+                    } catch (IOException e) {
+                        try { command.reply(false); } catch (Exception ee) { }
+                        try { fout.close(); } catch (Exception ee) { }
+                        return null;
                     }
-                    try { command.reply(true); } catch (Exception ee) { }
-                } catch (IOException e) {
-                    try { command.reply(false); } catch (Exception ee) { }
-                    try { fout.close(); } catch (Exception ee) { }
-                    return null;
+                    return fout;
+                }) == null) {
+                    try { command.reply(false); } catch (Exception e) { }
                 }
-                return fout;
-            }) == null) {
-                try { command.reply(false); } catch (Exception e) { }
             }
         });
     }
 
     private void handleList(SchedulableListCommand command) throws ApplicationException {
         var user = command.getUser();
-        var uDir = userDir(user);
-        var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
+        var uFS = getUserFS(user);
+        var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
             Collection<Path> items = new LinkedList<>();
-            try (var dirContent = Files.newDirectoryStream(path)) {
-                for (var entry : dirContent) {
-                    var r = uDir.relativize(entry);
-                    var e = r.toString();
-                    var p = new Path(e);
-                    items.add(p);
+            try (var lock = uFS.readLock()) {
+                try (var dirContent = Files.newDirectoryStream(path)) {
+                    for (var entry : dirContent) {
+                        var r = uFS.userDir.relativize(entry);
+                        var e = r.toString();
+                        var p = new Path(e);
+                        items.add(p);
+                    }
+                    try { command.reply(items); } catch (Exception ee) { }
+                } catch (Exception e) {
+                    try { command.notFound(); } catch (Exception ee) { }
                 }
-                try { command.reply(items); } catch (Exception ee) { }
-            } catch (Exception e) {
-                try { command.notFound(); } catch (Exception ee) { }
             }
         });
     }
 
     private void handleWrite(SchedulableWriteCommand command) throws ApplicationException {
         var user = command.getUser();
-        var uDir = userDir(user);
-        var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
+        var uFS = getUserFS(user);
+        var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
             var flag = new Object(){
                 public boolean success = false;
             };
-            if (this.filemap.computeIfPresent(path, (p, fout) -> {
-                try {
-                    var buffer = command.getData();
-                    fout.write(buffer, command.getOffset());
-                    if (command.requireSync()) {
-                        fout.force(true);
-                    }
-                    flag.success = true;
-                } catch (IOException e) { }
-                return fout;
-            }) == null) {
+            try (var lock = uFS.readLock()) {
+                uFS.filemap.compute(path, (p, fout) -> {
+                    try {
+                        if (fout == null) {
+                            fout = FileChannel.open(p, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
+                        }
+                        var buffer = command.getData();
+                        fout.write(buffer, command.getOffset());
+                        if (command.requireSync()) {
+                            fout.force(true);
+                        }
+                        flag.success = true;
+                    } catch (IOException e) { }
+                    return fout;
+                });
             }
             try { command.reply(flag.success); } catch (Exception e) { }
         });
@@ -316,29 +445,30 @@ public class UserTreeExecutor implements Executor {
 
     private void handleCreate(SchedulableCreateCommand command) throws ApplicationException {
         var user = command.getUser();
-        var uDir = userDir(user);
-        var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
+        var uFS = getUserFS(user);
+        var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
             var flag = new Object(){
                 public boolean success = false;
             };
-            if (this.filemap.computeIfAbsent(path, (p) -> {
-                FileChannel fout = null;
-                try {
-                    fout = FileChannel.open(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
-                } catch (IOException e) {
-                    return null;
-                }
-                try {
-                    var buffer = command.getData();
-                    fout.write(buffer);
-                    if (command.requireSync()) {
-                        fout.force(true);
+            try (var lock = uFS.readLock()) {
+                uFS.filemap.computeIfAbsent(path, (p) -> {
+                    FileChannel fout = null;
+                    try {
+                        fout = FileChannel.open(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
+                    } catch (IOException e) {
+                        return null;
                     }
-                    flag.success = true;
-                } catch (Exception e) { }
-                return fout;
-            }) != null) {
+                    try {
+                        var buffer = command.getData();
+                        fout.write(buffer);
+                        if (command.requireSync()) {
+                            fout.force(true);
+                        }
+                        flag.success = true;
+                    } catch (Exception e) { }
+                    return fout;
+                });
             }
             try { command.reply(flag.success); } catch (Exception e) { }
         });
@@ -346,84 +476,90 @@ public class UserTreeExecutor implements Executor {
 
     private void handleCopy(SchedulableCopyCommand command) throws ApplicationException {
         var user = command.getUser();
-        var uDir = userDir(user);
-        var srcPath = java.nio.file.Path.of(uDir.toString(), command.getSource().getPath());
-        var dsrPath = java.nio.file.Path.of(uDir.toString(), command.getDestination().getPath());
+        var uFS = getUserFS(user);
+        var srcPath = java.nio.file.Path.of(uFS.userDir.toString(), command.getSource().getPath());
+        var dsrPath = java.nio.file.Path.of(uFS.userDir.toString(), command.getDestination().getPath());
         pool.submit(() -> {
             var flag = new Object(){
                 public boolean success = false;
             };
-            this.filemap.computeIfAbsent(dsrPath, (dst) -> {
-                this.filemap.compute(srcPath, (src, fout) -> {
-                    if (fout != null) {
-                        try { fout.close(); } catch (IOException ee) { }
-                    }
-                    try {
-                        Files.copy(srcPath, dsrPath);
-                        flag.success = true;
-                    } catch (IOException e) { }
-                    return null;
-                });
-                return null;
-            });
-            try { command.reply(flag.success); } catch (Exception ee) { }
-        });
-    }
-
-    private void handleMove(SchedulableMoveCommand command) throws ApplicationException {
-        var user = command.getUser();
-        var uDir = userDir(user);
-        var srcPath = java.nio.file.Path.of(uDir.toString(), command.getSource().getPath());
-        var dstPath = java.nio.file.Path.of(uDir.toString(), command.getDestination().getPath());
-        pool.submit(() -> {
-            if (Files.isDirectory(dstPath)) {
-                try {
-                    Files.move(srcPath, dstPath);
-                    this.filemap.replaceAll((p, fc) -> {
-                        if (p.startsWith(dstPath)) {
-                            try { fc.close(); } catch (Exception ee) { }
-                            return null;
-                        } else {
-                            return fc;
-                        }
-                    });
-                    try { command.reply(true); } catch (Exception ee) { }
-                } catch (IOException e) {
-                    try { command.reply(false); } catch (Exception ee) { }
-                }
-            } else {
-                var flag = new Object(){
-                    public boolean success = false;
-                };
-                this.filemap.computeIfAbsent(dstPath, (dst) -> {
-                    this.filemap.compute(srcPath, (src, fout) -> {
+            try (var lock = uFS.readLock()) {
+                uFS.filemap.computeIfAbsent(dsrPath, (dst) -> {
+                    uFS.filemap.compute(srcPath, (src, fout) -> {
                         if (fout != null) {
                             try { fout.close(); } catch (IOException ee) { }
                         }
                         try {
-                            Files.move(srcPath, dstPath);
+                            Files.copy(srcPath, dsrPath);
                             flag.success = true;
                         } catch (IOException e) { }
                         return null;
                     });
                     return null;
                 });
-                try { command.reply(flag.success); } catch (Exception ee) { }
+            }
+            try { command.reply(flag.success); } catch (Exception ee) { }
+        });
+    }
+
+    private void handleMove(SchedulableMoveCommand command) throws ApplicationException {
+        var user = command.getUser();
+        var uFS = getUserFS(user);
+        var srcPath = java.nio.file.Path.of(uFS.userDir.toString(), command.getSource().getPath());
+        var dstPath = java.nio.file.Path.of(uFS.userDir.toString(), command.getDestination().getPath());
+        pool.submit(() -> {
+            try (var lock = uFS.writeLock()) {
+                if (Files.isDirectory(dstPath)) {
+                    try {
+                        Files.move(srcPath, dstPath);
+                        uFS.filemap.replaceAll((p, fc) -> {
+                            if (p.startsWith(dstPath)) {
+                                try { fc.close(); } catch (Exception ee) { }
+                                return null;
+                            } else {
+                                return fc;
+                            }
+                        });
+                        try { command.reply(true); } catch (Exception ee) { }
+                    } catch (IOException e) {
+                        try { command.reply(false); } catch (Exception ee) { }
+                    }
+                } else {
+                    var flag = new Object(){
+                        public boolean success = false;
+                    };
+                    uFS.filemap.computeIfAbsent(dstPath, (dst) -> {
+                        uFS.filemap.compute(srcPath, (src, fout) -> {
+                            if (fout != null) {
+                                try { fout.close(); } catch (IOException ee) { }
+                            }
+                            try {
+                                Files.move(srcPath, dstPath);
+                                flag.success = true;
+                            } catch (IOException e) { }
+                            return null;
+                        });
+                        return null;
+                    });
+                    try { command.reply(flag.success); } catch (Exception ee) { }
+                }
             }
         });
     }
 
     private void handleMkdir(SchedulableMkdirCommand command) throws ApplicationException {
         var user = command.getUser();
-        var uDir = userDir(user);
-        var path = java.nio.file.Path.of(uDir.toString(), command.getPath().getPath());
+        var uFS = getUserFS(user);
+        var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
-            try {
+            var flag = new Object(){
+                public boolean success = false;
+            };
+            try (var lock = uFS.readLock()) {
                 Files.createDirectory(path);
-                try { command.reply(true); } catch (Exception ee) { }
-            } catch (IOException e) {
-                try { command.reply(false); } catch (Exception ee) { }
-            }
+                flag.success = true;
+            } catch (IOException e) { }
+            try { command.reply(flag.success); } catch (Exception ee) { }
         });
     }
 
