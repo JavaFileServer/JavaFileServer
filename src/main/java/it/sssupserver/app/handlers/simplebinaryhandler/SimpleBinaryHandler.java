@@ -127,12 +127,13 @@ public class SimpleBinaryHandler implements RequestHandler {
                 }
 
             } catch (Exception e) {
+                try { schannel.close(); } catch (Exception ee) { }
                 System.err.println("Error occurred while parsing command: " + e);
                 String stackTrace = ""; int i=0;
                 for (var st : e.getStackTrace()) {
                     stackTrace += ++i + ") " + st.toString() + "\n";
                 }
-                System.err.println("Error occurred while scheduling command" + e.getMessage() + "\n|> stacktrace: " + stackTrace);
+                System.err.println("Error occurred while scheduling command: '" + e.getMessage() + "'\ncause: " + e.getCause() + "\n|> stacktrace: " + stackTrace);
             }
         }
     }
