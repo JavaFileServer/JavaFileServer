@@ -34,7 +34,6 @@ public class UserTreeExecutor implements Executor {
     // prefix identifying
     private String userdir_prefix = "u";
     private ExecutorService pool;
-    private ConcurrentMap<java.nio.file.Path, java.nio.channels.FileChannel> filemap = new ConcurrentSkipListMap<>();
 
     static int MAX_CHUNK_SIZE = 2 << 16;
 
@@ -310,7 +309,7 @@ public class UserTreeExecutor implements Executor {
         var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
             try (var lock = uFS.readLock()) {
-                if (this.filemap.compute(path, (p, fout) -> {
+                if (uFS.filemap.compute(path, (p, fout) -> {
                     try {
                         if (fout == null) {
                             fout = FileChannel.open(path,  StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
@@ -354,7 +353,7 @@ public class UserTreeExecutor implements Executor {
         var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
             try (var lock = uFS.readLock()) {
-                if (this.filemap.compute(path, (p, fout) -> {
+                if (uFS.filemap.compute(path, (p, fout) -> {
                     try {
                         if (fout != null) {
                             fout.close();
