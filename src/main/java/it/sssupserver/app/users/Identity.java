@@ -21,6 +21,10 @@ public class Identity implements Comparable<Identity> {
         this.valid = false;
     }
 
+    public Long getIdOrNull() {
+        return this.isValid() ?  this.id : null;
+    }
+
     public long getId() throws InvalidIdentityException {
         if (!this.isValid()) {
             throw new InvalidIdentityException();
