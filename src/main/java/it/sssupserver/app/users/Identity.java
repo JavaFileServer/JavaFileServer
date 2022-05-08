@@ -53,4 +53,9 @@ public class Identity implements Comparable<Identity> {
             : 0
             );
     }
+
+    @Override
+    public String toString() {
+        return "["+(isValid() ? "INVALID" : (username+":"+id)) +"]";
+    }
 }
