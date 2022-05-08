@@ -17,6 +17,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -34,6 +36,16 @@ public class UserTreeExecutor implements Executor {
     // prefix identifying
     private String userdir_prefix = "u";
     private ExecutorService pool;
+    // Will handle a single periodic task that will
+    // close all FileChannel(s) owned by users who
+    // have not performed any operation in the last
+    // cleanup_delay_ms*repeat_after time unit.
+    // The task will be runned every repeat_after
+    // time unit.
+    private ScheduledExecutorService timedPoll;
+    // interval after which the 'cleanup thread'
+    private long cleanup_delay_ms = 60*1000;
+    private long repeat_after = 5;
 
     static int MAX_CHUNK_SIZE = 2 << 16;
 
@@ -84,7 +96,7 @@ public class UserTreeExecutor implements Executor {
         // path to the root folder for the specified user
         public final java.nio.file.Path userDir;
         // to effectively support risky operations like MOVE
-        public final ReadWriteLock lock = new ReentrantReadWriteLock();
+        public final ReadWriteLock lock = new ReentrantReadWriteLock(true);
         // map paths to files
         public final ConcurrentMap<java.nio.file.Path, java.nio.channels.FileChannel> filemap = new ConcurrentHashMap<>();
         // time
@@ -101,6 +113,7 @@ public class UserTreeExecutor implements Executor {
             @Override
             public void close() {
                 if (!closed) {
+                    lastAccess = Instant.now();
                     this.lock.unlock();
                     closed = true;
                 }
@@ -257,7 +270,7 @@ public class UserTreeExecutor implements Executor {
                             } while (toRead > 0);
                         }
                     } catch (Exception e) {
-                        try { fin.close(); } catch (Exception ee) { }
+                        safeClose(fin);
                         return null;
                     }
                     return fin;
@@ -292,7 +305,7 @@ public class UserTreeExecutor implements Executor {
                         try { command.reply(true); } catch (Exception ee) { }
                     } catch (Exception e) {
                         try { command.reply(false); } catch (Exception ee) { }
-                        try { fout.close(); } catch (Exception ee) { }
+                        safeClose(fout);
                         return null;
                     }
                     return fout;
@@ -318,7 +331,7 @@ public class UserTreeExecutor implements Executor {
                         }
                     } catch (IOException e) {
                         try { command.reply(false); } catch (Exception ee) { }
-                        try { fout.close(); } catch (Exception ee) { }
+                        safeClose(fout);
                         return null;
                     }
                     try { command.reply(true); } catch (Exception ee) { }
@@ -352,22 +365,19 @@ public class UserTreeExecutor implements Executor {
         var uFS = getUserFS(user);
         var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
+            var flag = new Object(){
+                public boolean success = false;
+            };
             try (var lock = uFS.readLock()) {
-                if (uFS.filemap.compute(path, (p, fout) -> {
+                uFS.filemap.compute(path, (p, fout) -> {
                     try {
-                        if (fout != null) {
-                            fout.close();
-                        }
-                        var success = Files.deleteIfExists(path);
-                        try { command.reply(success); } catch (Exception ee) { }
-                    } catch (IOException e) {
-                        try { command.reply(false); } catch (Exception ee) { }
-                    }
+                        safeClose(fout);
+                        flag.success = Files.deleteIfExists(path);
+                    } catch (IOException e) { }
                     return null;
-                }) == null) {
-                    try { command.reply(false); } catch (Exception e) { }
-                }
+                });
             }
+            try { command.reply(flag.success); } catch (Exception e) { }
         });
     }
 
@@ -376,25 +386,26 @@ public class UserTreeExecutor implements Executor {
         var uFS = getUserFS(user);
         var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
+            var flag = new Object(){
+                public boolean success = false;
+            };
             try (var lock = uFS.readLock()) {
-                if (uFS.filemap.computeIfPresent(path, (p, fout) -> {
+                uFS.filemap.computeIfPresent(path, (p, fout) -> {
                     try {
                         var buffer = command.getData();
                         fout.position(fout.size()).write(buffer);
                         if (command.requireSync()) {
                             fout.force(true);
                         }
-                        try { command.reply(true); } catch (Exception ee) { }
+                        flag.success = true;
                     } catch (IOException e) {
-                        try { command.reply(false); } catch (Exception ee) { }
-                        try { fout.close(); } catch (Exception ee) { }
+                        safeClose(fout);
                         return null;
                     }
                     return fout;
-                }) == null) {
-                    try { command.reply(false); } catch (Exception e) { }
-                }
+                });
             }
+            try { command.reply(flag.success); } catch (Exception e) { }
         });
     }
 
@@ -403,6 +414,9 @@ public class UserTreeExecutor implements Executor {
         var uFS = getUserFS(user);
         var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
         pool.submit(() -> {
+            var flag = new Object(){
+                public boolean success = false;
+            };
             Collection<Path> items = new LinkedList<>();
             try (var lock = uFS.readLock()) {
                 try (var dirContent = Files.newDirectoryStream(path)) {
@@ -412,10 +426,13 @@ public class UserTreeExecutor implements Executor {
                         var p = new Path(e);
                         items.add(p);
                     }
-                    try { command.reply(items); } catch (Exception ee) { }
-                } catch (Exception e) {
-                    try { command.notFound(); } catch (Exception ee) { }
-                }
+                    flag.success = true;
+                } catch (Exception e) { }
+            }
+            if (flag.success) {
+                try { command.reply(items); } catch (Exception ee) { }
+            } else {
+                try { command.notFound(); } catch (Exception ee) { }
             }
         });
     }
@@ -491,9 +508,7 @@ public class UserTreeExecutor implements Executor {
             try (var lock = uFS.readLock()) {
                 uFS.filemap.computeIfAbsent(dsrPath, (dst) -> {
                     uFS.filemap.compute(srcPath, (src, fout) -> {
-                        if (fout != null) {
-                            try { fout.close(); } catch (IOException ee) { }
-                        }
+                        safeClose(fout);
                         try {
                             Files.copy(srcPath, dsrPath);
                             flag.success = true;
@@ -519,7 +534,7 @@ public class UserTreeExecutor implements Executor {
                         Files.move(srcPath, dstPath);
                         uFS.filemap.replaceAll((p, fc) -> {
                             if (p.startsWith(dstPath)) {
-                                try { fc.close(); } catch (Exception ee) { }
+                                safeClose(fc);
                                 return null;
                             } else {
                                 return fc;
@@ -608,11 +623,60 @@ public class UserTreeExecutor implements Executor {
         }
         this.started = true;
         this.pool = Executors.newCachedThreadPool();
+        this.timedPoll = Executors.newScheduledThreadPool(1);
+        this.timedPoll.scheduleWithFixedDelay(() -> {
+            var now = Instant.now();
+            var oldLimit = now.minusMillis(this.cleanup_delay_ms*this.repeat_after);
+            // handle share files
+            closeIfOld(defaultFS, oldLimit);
+            // handle personal files
+            this.userFS.replaceAll((path, userFS) -> {
+                closeIfOld(userFS, oldLimit);
+                return userFS;
+            });
+        }, 0, this.cleanup_delay_ms, TimeUnit.MILLISECONDS);
+    }
+    
+    private static void closeIfOld(UserFS userFS, Instant oldLimit) {        
+        if (userFS != null) {
+            try (var lock = userFS.writeLock()) {
+                if (userFS.lastAccess.isBefore(oldLimit)) {
+                    closeAllFileChannels(userFS);
+                }
+            }
+        }
+    }
+
+    private static void safeClose(FileChannel file) {
+        if (file != null) {
+            try { file.close(); } catch (IOException e) { }
+        }
+    }
+
+    private static void closeAllFileChannels(UserFS userFS) {
+        if (userFS != null) {
+            try (var lock = userFS.writeLock()) {
+                userFS.filemap.replaceAll((path, file) -> {
+                    safeClose(file);
+                    return null;
+                });
+            }
+        }
+    }
+
+    private void closeAllFileChannels() {
+        closeAllFileChannels(defaultFS);
+        this.userFS.replaceAll((path, userFS) -> {
+            closeAllFileChannels(userFS);
+            return null;
+        });
     }
 
     @Override
     public void stop() throws Exception {
-        this.pool.shutdown();
+        this.pool.shutdown(); this.pool = null;
+        this.timedPoll.shutdown(); this.timedPoll = null;
+        closeAllFileChannels();
         if (!this.started) {
             throw new Exception("Executor was not previously started started");
         }
