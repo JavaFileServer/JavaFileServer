@@ -99,11 +99,11 @@ public class Write implements Command {
                 this.marker = new Random().nextInt();
                 buffer.putInt(this.marker);
             }
-            buffer.putShort(this.getType());
-            buffer.putShort((short)0);
             if (this.version >= 2) {
                 buffer.put(Helpers.serializeString(this.username));
             }
+            buffer.putShort(this.getType());
+            buffer.putShort((short)0);
             buffer.put(Helpers.serializeString(this.path));
             // length
             var length = this.length == 0 ? this.fin.size() : Math.min(this.length, this.fin.size());

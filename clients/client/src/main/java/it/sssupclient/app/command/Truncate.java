@@ -12,6 +12,7 @@ public class Truncate implements Command {
     private int version;
     private String path;
     private String username = null;
+    private long length;
 
     @Override
     public void parse(int version, String username, String[] args) throws Exception {
@@ -21,6 +22,12 @@ public class Truncate implements Command {
             throw new InvalidArgumentsException("Missing required arguments");
         }
         this.path = args[0];
+        if (args.length >= 2) {
+            this.length = Long.valueOf(args[1]);
+            if (version < 4 && this.length != 0) {
+                throw new InvalidArgumentsException("'length'>0 is valid only for version>=4");
+            }
+        }
     }
 
     @Override
@@ -72,12 +79,15 @@ public class Truncate implements Command {
                 this.marker = new Random().nextInt();
                 buffer.putInt(this.marker);
             }
-            buffer.putShort(this.getType());
-            buffer.putShort((short)0);
             if (this.version >= 2) {
                 buffer.put(Helpers.serializeString(this.username));
             }
+            buffer.putShort(this.getType());
+            buffer.putShort((short)0);
             buffer.put(Helpers.serializeString(this.path));
+            if (this.version >= 4) {
+                buffer.putLong(this.length);
+            }
             buffer.flip();
             Helpers.writeAll(sc, buffer);
         }

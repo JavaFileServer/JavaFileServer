@@ -90,12 +90,12 @@ public class Append implements Command {
             buffer.putInt(this.version);
             buffer.putShort(this.getType());
             buffer.putShort((short)0);
-            if (this.version >= 2) {
-                buffer.put(Helpers.serializeString(this.username));
-            }
             if (this.version >= 3) {
                 this.marker = new Random().nextInt();
                 buffer.putInt(this.marker);
+            }
+            if (this.version >= 2) {
+                buffer.put(Helpers.serializeString(this.username));
             }
             buffer.put(Helpers.serializeString(this.path));
             // length
