@@ -1,5 +1,6 @@
 package it.sssupserver.app.base;
 
+import java.util.Arrays;
 import java.util.function.Predicate;
 import java.util.regex.*;
 
@@ -19,7 +20,7 @@ public class Path {
     {
         return p.isEmpty() || test.test(p);
     }
-    
+
     private String[] path;
     public Path(String p) throws InvalidPathException
     {
@@ -47,6 +48,10 @@ public class Path {
         this.path = tmp;
     }
 
+    private Path(String[] items) {
+        this.path = items;
+    }
+
     /**
      * Return true if the path is flat, i.e.
      * there are no folder.
@@ -64,6 +69,31 @@ public class Path {
     public String[] getPath()
     {
         return this.path;
+    }
+
+    // Return child Path, i.e.: Path
+    // withoud current base dire
+    public Path child()
+    {
+        if (this.path.length == 0) {
+            return new Path(new String[0]);
+        } else {
+            var tmp = Arrays.copyOfRange(this.path, 1, this.path.length);
+            return new Path(tmp);
+        }
+    }
+
+    /**
+     * Name of the top item of this path
+     */
+    public String top()
+    {
+        return this.path.length == 0 ? "" : this.path[0];
+    }
+
+    public boolean isEmpty()
+    {
+        return this.path.length == 0;
     }
 
     @Override
