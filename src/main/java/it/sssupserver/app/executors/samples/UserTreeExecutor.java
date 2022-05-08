@@ -96,9 +96,13 @@ public class UserTreeExecutor implements Executor {
                 this.lock.lock();
             }
 
+            private boolean closed;
             @Override
             public void close() {
-                this.lock.unlock();
+                if (!closed) {
+                    this.lock.unlock();
+                    closed = true;
+                }
             }
         }
 
