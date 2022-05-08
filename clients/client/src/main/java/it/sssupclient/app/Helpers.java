@@ -115,6 +115,9 @@ public class Helpers {
     }
 
     public static byte[] serializeString(String string) {
+        if (string == null || string.isEmpty()) {
+            return new byte[4];
+        }
         var data = string.getBytes(StandardCharsets.UTF_8);
         var bytes = new ByteArrayOutputStream(4 + data.length);
         var bs = new DataOutputStream(bytes);
