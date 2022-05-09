@@ -52,42 +52,6 @@ public class UserTreeExecutor implements Executor {
     // to handle client requests
     static int WORKER_THREAD_COUNT = 8;
 
-    /**
-     * CURRENTLY UNUSED!!!
-     *
-     * The executor will maintain a tree-structure
-     * representing the handled file system.
-     * This is necessary in order to avoid issues
-     * and race conditions with the MOVE command that
-     * would, in case it is operated on directory,
-     * require the invalidation of all its child items,
-     * action that could not be performed atomically
-     * with a concurrent map. 
-     */
-    private class FSItem {
-        public boolean isFile;
-        // filename
-        public String name;
-        // null is file
-        public ConcurrentMap<String, FSItem> children;
-        // null is file
-        public FileChannel file;
-        // required for special operations (i.e.: close, move)
-        public ReadWriteLock lock;
-        // if set to false data is invalid ad should be discarded
-        public boolean valid;
-        // last time it was used
-        public Instant lastUse;
-
-        // return the item associated with the given path
-        public FSItem traverse(Path path) {
-            if (path.isEmpty()) {
-                return this;
-            }
-            return null;
-        }
-    }
-
     // This class represent the subtree of the machine FS
     // 'owned' by a certain user.
     // It is used internally by this Executor to maintain
