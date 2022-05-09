@@ -74,11 +74,14 @@ public class SimpleBinaryHandler implements RequestHandler {
                     }
                     break;
                 case 3: // username and marker
+                case 4: // same as version 3 but some message parameters are now long
                     {
                         marker = SimpleBinaryHelper.readInt(schannel);
                         var username = SimpleBinaryHelper.readString(schannel);
-                        var hash = username.hashCode();
-                        user = new Identity(username, hash);
+                        if (!username.isEmpty()) {
+                            var hash = username.hashCode();
+                            user = new Identity(username, hash);
+                        }
                     }
                     break;
                 default:
