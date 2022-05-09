@@ -13,6 +13,13 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 public class Helpers {
+    public static void sendFull(FileChannel file, SocketChannel sc, long length) throws IOException {
+        long sent = 0;
+        do {
+            sent += file.transferTo(0, length, sc);
+        } while (sent != length);
+    }
+
     public static void panic(String error) {
         System.err.println("Panic: " + error);
         System.exit(1);
@@ -124,7 +131,7 @@ public class Helpers {
         try {
             bs.writeInt(data.length);
             bs.write(data);
-            bs.flush();            
+            bs.flush();
         } catch (Exception e) {
             System.err.println("Exception: " + e);
             System.exit(1);
@@ -153,7 +160,7 @@ public class Helpers {
     static void checkType(SocketChannel sc, short type) {
         checkShort(sc, type);
     }
-    
+
     static void checkAns(SocketChannel sc) {
         checkShort(sc, (short)1);
     }

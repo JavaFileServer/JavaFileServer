@@ -109,7 +109,7 @@ public class CreateOrReplace implements Command {
             buffer.flip();
             Helpers.writeAll(sc, buffer);
             // send all file through socket
-            this.fin.transferTo(0, length, sc);
+            Helpers.sendFull(this.fin, sc, length);
         }
     }
 
