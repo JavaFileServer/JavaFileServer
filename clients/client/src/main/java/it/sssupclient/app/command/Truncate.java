@@ -36,8 +36,8 @@ public class Truncate implements Command {
         if (lpadding == null) {
             lpadding = "";
         }
-        System.err.println(lpadding + getName() + " remote_path");
-        System.err.println(lpadding + "\t truncate remote file");
+        System.err.println(lpadding + getName() + " remote_path [length if v>=4]");
+        System.err.println(lpadding + "\t truncate remote file (to the specified length, parameter available only for SBP v4+)");
     }
 
     @Override
