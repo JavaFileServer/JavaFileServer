@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.time.Instant;
 import java.util.Random;
 
 import it.sssupclient.app.BufferManager;
@@ -89,7 +90,7 @@ public class Create implements Command {
             var buffer = wrapper.get();
             buffer.putInt(this.version);
             if (this.version >= 3) {
-                this.marker = new Random().nextInt();
+                this.marker = new Random(Instant.now().toEpochMilli()).nextInt();
                 buffer.putInt(this.marker);
             }
             if (this.version >= 2) {

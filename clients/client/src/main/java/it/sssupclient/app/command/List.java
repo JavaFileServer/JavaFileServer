@@ -1,6 +1,7 @@
 package it.sssupclient.app.command;
 
 import java.nio.channels.SocketChannel;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -78,7 +79,7 @@ public class List implements Command {
             var buffer = wrapper.get();
             buffer.putInt(this.version);
             if (this.version >= 3) {
-                this.marker = new Random().nextInt();
+                this.marker = new Random(Instant.now().toEpochMilli()).nextInt();
                 buffer.putInt(this.marker);
             }
             if (this.version >= 2) {
