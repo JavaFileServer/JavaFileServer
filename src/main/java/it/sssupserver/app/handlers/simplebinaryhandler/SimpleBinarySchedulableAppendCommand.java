@@ -115,15 +115,9 @@ public class SimpleBinarySchedulableAppendCommand extends SchedulableAppendComma
             var remainder = length - read;
             var toRead = (int)Math.min(remainder, buffer.remaining());
             buffer.limit(toRead);
-            do {
-                if (sc.read(buffer) < 0) {
-                    throw new Exception("Bad read");
-                }
-            } while (buffer.hasRemaining());
-            // ready to read
-            buffer.flip();
+            SimpleBinaryHelper.readFull(sc, buffer);
             // increase counters
-            read += buffer.remaining();
+            read += toRead;
             // prepare command
             var schedulable = new SimpleBinarySchedulableAppendCommand(result, path, wrapper);
             schedulable.setUser(user);
