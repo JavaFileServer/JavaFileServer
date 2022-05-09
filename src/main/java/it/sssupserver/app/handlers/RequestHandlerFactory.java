@@ -53,13 +53,11 @@ public class RequestHandlerFactory {
         return ans;
     }
 
-    public static RequestHandler getRequestHandler(Executor executor) throws Exception
-    {
+    public static RequestHandler getRequestHandler(Executor executor) throws Exception {
         return getRequestHandler(executor, null);
     }
 
-    public static RequestHandler getRequestHandler(Executor executor, String[] args) throws Exception
-    {
+    public static RequestHandler getRequestHandler(Executor executor, String[] args) throws Exception {
         var a = parseArgs(args);
         return new SimpleBinaryHandler(executor, a.port);
     }
