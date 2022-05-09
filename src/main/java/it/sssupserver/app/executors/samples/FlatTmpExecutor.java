@@ -29,7 +29,7 @@ public class FlatTmpExecutor implements SynchronousExecutor {
     private String prefix = "JAVA-FILE-SERVER-";
     private java.nio.file.Path baseDir;
 
-    static int MAX_CHUNK_SIZE = 2 << 16;
+    static int MAX_CHUNK_SIZE = 1 << 16;
 
     public FlatTmpExecutor() throws Exception
     {

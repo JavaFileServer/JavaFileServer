@@ -47,7 +47,7 @@ public class UserTreeExecutor implements Executor {
     private long cleanup_delay_ms = 60*1000;
     private long repeat_after = 5;
 
-    static int MAX_CHUNK_SIZE = 2 << 16;
+    static int MAX_CHUNK_SIZE = 1 << 16;
 
     /**
      * CURRENTLY UNUSED!!!
