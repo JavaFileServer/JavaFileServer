@@ -9,8 +9,20 @@ import it.sssupserver.app.executors.*;
  */
 public class App
 {
+    static void Help() {
+        System.err.println("Usage:");
+        ExecutorFactory.Help("\t");
+        System.out.println();
+        RequestHandlerFactory.Help("\t");
+        System.out.println();
+        System.exit(1);
+    }
+
     public static void main( String[] args ) throws Exception
     {
+        if (args.length > 0 && args[0].equals("--help")) {
+            Help();
+        }
         var executor = ExecutorFactory.getExecutor(args);
         var handler = RequestHandlerFactory.getRequestHandler(executor, args);
         var controller = ControllerFactory.getController();
