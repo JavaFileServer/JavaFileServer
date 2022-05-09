@@ -103,7 +103,7 @@ public class SimpleBinarySchedulableAppendCommand extends SchedulableAppendComma
         SimpleBinaryHandler.checkCategory(sc);
         var path = new Path(SimpleBinaryHelper.readString(sc));
         var length = version < 4 ? SimpleBinaryHelper.readInt(sc) : SimpleBinaryHelper.readLong(sc);
-        var read = 0;
+        var read = 0L;
         var result = new Result();
         var success = true;
 
