@@ -48,6 +48,9 @@ public class UserTreeExecutor implements Executor {
     private long repeat_after = 5;
 
     static int MAX_CHUNK_SIZE = 1 << 16;
+    // At most WORKER_THREAD_COUNT will be used
+    // to handle client requests
+    static int WORKER_THREAD_COUNT = 8;
 
     /**
      * CURRENTLY UNUSED!!!
@@ -622,7 +625,7 @@ public class UserTreeExecutor implements Executor {
             throw new Exception("Executor already started");
         }
         this.started = true;
-        this.pool = Executors.newCachedThreadPool();
+        this.pool = Executors.newFixedThreadPool(WORKER_THREAD_COUNT);
         this.timedPoll = Executors.newScheduledThreadPool(1);
         this.timedPoll.scheduleWithFixedDelay(() -> {
             var now = Instant.now();
