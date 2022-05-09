@@ -17,19 +17,22 @@ public class SimpleBinaryHandler implements RequestHandler {
     private int port;
     private Executor executor;
 
+    private static int DEFAULT_PORT = 5050;
+
     public SimpleBinaryHandler(Executor executor) throws Exception
     {
-        this(executor, 5050);
+        this(executor, DEFAULT_PORT);
     }
 
     public SimpleBinaryHandler(Executor executor, int port) throws Exception
     {
-        if (!(0 < port || port < (1<<16)))
+        if (!(port < (1<<16)))
         {
             throw new Exception("Invalid port number: " + port);
         }
-        this.port = port;
+        this.port = port != 0 ? port : DEFAULT_PORT;
         this.executor = executor;
+        System.out.println("Listener will accept connections on port " + this.port);
     }
 
     class Listener extends Thread {
