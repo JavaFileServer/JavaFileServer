@@ -21,7 +21,7 @@ public class RequestHandlerFactory {
             lpadding = "";
         }
         System.err.println(lpadding + "Arguments recognised by request handlers:");
-        System.err.println(lpadding + "\t--Hport number: port number on which listen for requests");
+        System.err.println(lpadding + "\t" + argsPrefix + "port number: port number on which listen for requests");
     }
 
     private static HandlerArgs parseArgs(String[] args) {

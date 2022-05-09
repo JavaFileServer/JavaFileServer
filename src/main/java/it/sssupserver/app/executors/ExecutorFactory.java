@@ -18,7 +18,7 @@ public class ExecutorFactory {
             lpadding = "";
         }
         System.err.println(lpadding + "Arguments recognised by executors:");
-        System.err.println(lpadding + "\t--Xdata path: path where to save files");
+        System.err.println(lpadding + "\t" + argsPrefix + "data path: path where to save files");
     }
 
     private static ExecutorArgs parseArgs(String[] args) {
