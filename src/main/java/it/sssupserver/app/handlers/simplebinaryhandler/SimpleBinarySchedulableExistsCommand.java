@@ -1,13 +1,12 @@
 package it.sssupserver.app.handlers.simplebinaryhandler;
 
+import it.sssupserver.app.base.BufferManager;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.users.Identity;
 
-import java.io.*;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class SimpleBinarySchedulableExistsCommand extends SchedulableExistsCommand {
@@ -22,26 +21,33 @@ public class SimpleBinarySchedulableExistsCommand extends SchedulableExistsComma
         return this.user;
     }
 
+    private int version;
+    private int marker;
     private SocketChannel out;
-    public SimpleBinarySchedulableExistsCommand(ExistsCommand cmd, SocketChannel out) {
+    public SimpleBinarySchedulableExistsCommand(ExistsCommand cmd, SocketChannel out, int version, int marker) {
         super(cmd);
         this.out = out;
+        this.version = version;
+        this.marker = marker;
     }
 
     @Override
     public void reply(boolean exists) throws Exception {
-        // 12 bytes header, no payload
-        var bytes = new ByteArrayOutputStream(12);
-        var bs = new DataOutputStream(bytes);
-        // write data to buffer
-        bs.writeInt(this.isAuthenticated() ? 2 : 1);    // version
-        bs.writeShort(3);  // command: EXISTS
-        bs.writeShort(1);  // category: answer
-        bs.writeBoolean(exists);    // data bytes
-        bs.write(new byte[3]);  // padding
-        bs.flush();
-        // now data can be sent
-        this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
+        // 12 bytes header + 4 if v>=3 + total_len for payload
+        try (var wrapper = BufferManager.getBuffer()) {
+            var buffer = wrapper.get();
+            buffer.putInt(this.version);    // version
+            if (this.version >= 3) {
+                buffer.putInt(this.marker);
+            }
+            buffer.putShort((short)3);  // command: EXISTS
+            buffer.putShort((short)1);  // category: answer
+            buffer.put((byte)(exists?1:0)); // result
+            buffer.put(new byte[3]);    // padding
+            buffer.flip();
+            // now data can be sent
+            this.out.write(buffer);
+        }
         // close connection
         this.out.close();
     }
@@ -50,7 +56,7 @@ public class SimpleBinarySchedulableExistsCommand extends SchedulableExistsComma
         SimpleBinaryHandler.checkCategory(sc);
         String path = SimpleBinaryHelper.readString(sc);
         var cmd = new ExistsCommand(new Path(path));
-        var schedulable = new SimpleBinarySchedulableExistsCommand(cmd, sc);
+        var schedulable = new SimpleBinarySchedulableExistsCommand(cmd, sc, version, marker);
         schedulable.setUser(user);
         executor.scheduleExecution(schedulable);
     }

@@ -6,8 +6,6 @@ import it.sssupserver.app.commands.schedulables.*;
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.users.Identity;
 
-import java.io.*;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Semaphore;
 
@@ -69,19 +67,23 @@ public class SimpleBinarySchedulableCreateOrReplaceCommand extends SchedulableCr
         }
     }
 
-    private static void reply(SocketChannel sc, int version, boolean success) throws Exception {
-        // 12 bytes header, no payload
-        var bytes = new ByteArrayOutputStream(12);
-        var bs = new DataOutputStream(bytes);
-        // write data to buffer
-        bs.writeInt(version);   // version
-        bs.writeShort(2);  // command: CREATE OR REPLACE
-        bs.writeShort(1);  // category: answer
-        bs.writeBoolean(success);    // data bytes
-        bs.write(new byte[3]);  // padding
-        bs.flush();
-        // now data can be sent
-        sc.write(ByteBuffer.wrap(bytes.toByteArray()));
+    private static void reply(SocketChannel sc, int version, int marker, boolean success) throws Exception {
+        // 12 bytes header, no payload + 4 for marker in v>=3
+        try (var wrapper = BufferManager.getBuffer()) {
+            var buffer = wrapper.get();
+            // write data to buffer
+            buffer.putInt(version);     // version
+            if (version >= 3) {
+                buffer.putInt(marker);
+            }
+            buffer.putShort((short)2);  // command: CREATE OR REPLACE
+            buffer.putShort((short)1);  // category: answer
+            buffer.put((byte)(success ? 1 : 0));  // data bytes
+            buffer.put(new byte[3]);  // padding
+            buffer.flip();
+            // now data can be sent
+            sc.write(buffer);
+        }
         // close connection
         sc.close();
     }
@@ -98,26 +100,21 @@ public class SimpleBinarySchedulableCreateOrReplaceCommand extends SchedulableCr
         // how many bytes to read now?
         var toRead = (int)Math.min(length, buffer.remaining());
         buffer.limit(toRead);
-        do {
-            if (sc.read(buffer) < 0) {
-                throw new Exception("Bad read");
-            }
-        } while (buffer.hasRemaining());
+        SimpleBinaryHelper.readFull(sc, buffer);
         // ready to read
-        buffer.flip();
-        var offset = buffer.remaining();
+        long offset = toRead;
         // prepare command
         var schedulable = new SimpleBinarySchedulableCreateOrReplaceCommand(result, path, wrapper);
         schedulable.setUser(user);
         executor.scheduleExecution(schedulable);
         // done?
         if (!result.success()) {
-            reply(sc, version, false);
+            reply(sc, version, marker, false);
         } else if (length != offset) {
             var success = SimpleBinarySchedulableWriteCommand.write(executor, sc, user, path, offset, length-offset);
-            reply(sc, version, success);
+            reply(sc, version, marker, success);
         } else {
-            reply(sc, version, true);
+            reply(sc, version, marker, true);
         }
     }
 

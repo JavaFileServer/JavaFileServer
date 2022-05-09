@@ -109,7 +109,7 @@ public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand
     }
 
     public static boolean write(Executor executor, SocketChannel sc, Identity user, Path path, long offset, long length) throws IOException, Exception {
-        var read = 0;
+        var read = 0L;
         var nChunks = 0;
         var res = new Result();
 
@@ -124,18 +124,12 @@ public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand
             var toRead = (int)Math.min(remainder, buffer.remaining());
             // read bytes
             buffer.limit(toRead);
-            do {
-                if (sc.read(buffer) < 0) {
-                    throw new Exception("Bad read");
-                }
-            } while (buffer.hasRemaining());
-            // ready to read
-            buffer.flip();
+            SimpleBinaryHelper.readFull(sc, buffer);
             // prepare command
             var schedulable = new SimpleBinarySchedulableWriteCommand(res, path, wrapper, offset);
             // increase counters
-            offset += buffer.remaining();
-            read += buffer.remaining();
+            offset += toRead;
+            read += toRead;
             // send chunks one by one
             schedulable.setUser(user);
             executor.scheduleExecution(schedulable);

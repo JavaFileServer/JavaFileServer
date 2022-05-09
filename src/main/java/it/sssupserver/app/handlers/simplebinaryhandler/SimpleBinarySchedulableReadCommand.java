@@ -1,5 +1,6 @@
 package it.sssupserver.app.handlers.simplebinaryhandler;
 
+import it.sssupserver.app.base.BufferManager;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
@@ -121,21 +122,21 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
 
     @Override
     public void notFound() throws Exception {
-        // 12 bytes packet + 4 for v 3
-        var bytes = new ByteArrayOutputStream(20+4);
-        var bs = new DataOutputStream(bytes);
-        // write data to buffer
-        bs.writeInt(this.version);    // version
-        if (this.version >= 3) {
-            // write marker
-            bs.writeInt(this.marker);
+        // 12 bytes header + 4 if v>=3 + total_len for payload
+        try (var wrapper = BufferManager.getBuffer()) {
+            var buffer = wrapper.get();
+            buffer.putInt(this.version);    // version
+            if (this.version >= 3) {
+                buffer.putInt(this.marker);
+            }
+            buffer.putShort((short)1);  // command: WRITE
+            buffer.putShort((short)1);  // category: answer
+            buffer.putShort((short)1);  // status: ERRORE
+            buffer.putShort((short)0);  // padding
+            buffer.flip();
+            // now data can be sent
+            this.out.write(buffer);
         }
-        bs.writeShort(1);  // command: WRITE
-        bs.writeShort(1);  // category: answer
-        bs.writeShort(1);  // status: ERRORE
-        bs.writeShort(0);  // padding
-        // now data can be sent
-        this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
         // close connection
         this.out.close();
     }

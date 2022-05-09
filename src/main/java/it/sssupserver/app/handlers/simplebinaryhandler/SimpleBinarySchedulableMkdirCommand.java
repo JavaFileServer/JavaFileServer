@@ -1,13 +1,12 @@
 package it.sssupserver.app.handlers.simplebinaryhandler;
 
+import it.sssupserver.app.base.BufferManager;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.users.Identity;
 
-import java.io.*;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class SimpleBinarySchedulableMkdirCommand extends SchedulableMkdirCommand {
@@ -22,26 +21,33 @@ public class SimpleBinarySchedulableMkdirCommand extends SchedulableMkdirCommand
         return this.user;
     }
 
+    private int version;
+    private int marker;
     private SocketChannel out;
-    public SimpleBinarySchedulableMkdirCommand(MkdirCommand cmd, SocketChannel out) {
+    public SimpleBinarySchedulableMkdirCommand(MkdirCommand cmd, SocketChannel out, int version, int marker) {
         super(cmd);
         this.out = out;
+        this.version = version;
+        this.marker = marker;
     }
 
     @Override
     public void reply(boolean success) throws Exception {
-        // 12 bytes header, no payload
-        var bytes = new ByteArrayOutputStream(12);
-        var bs = new DataOutputStream(bytes);
-        // write data to buffer
-        bs.writeInt(1);     // version
-        bs.writeShort(12);  // command: MKDIR
-        bs.writeShort(1);   // category: answer
-        bs.writeBoolean(success);   // data bytes
-        bs.write(new byte[3]);  // padding
-        bs.flush();
-        // now data can be sent
-        this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
+        // 12 bytes header + 4 if v>=3 + total_len for payload
+        try (var wrapper = BufferManager.getBuffer()) {
+            var buffer = wrapper.get();
+            buffer.putInt(this.version);    // version
+            if (this.version >= 3) {
+                buffer.putInt(this.marker);
+            }
+            buffer.putShort((short)12); // command: MKDIR
+            buffer.putShort((short)1);  // category: answer
+            buffer.put((byte)(success?1:0)); // result
+            buffer.put(new byte[3]);    // padding
+            buffer.flip();
+            // now data can be sent
+            this.out.write(buffer);
+        }
         // close connection
         this.out.close();
     }
@@ -50,7 +56,7 @@ public class SimpleBinarySchedulableMkdirCommand extends SchedulableMkdirCommand
         SimpleBinaryHandler.checkCategory(sc);
         var path = SimpleBinaryHelper.readString(sc);
         var cmd = new MkdirCommand(new Path(path));
-        var schedulable = new SimpleBinarySchedulableMkdirCommand(cmd, sc);
+        var schedulable = new SimpleBinarySchedulableMkdirCommand(cmd, sc, version, marker);
         schedulable.setUser(user);
         executor.scheduleExecution(schedulable);
     }

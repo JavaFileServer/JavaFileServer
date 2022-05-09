@@ -1,12 +1,11 @@
 package it.sssupserver.app.handlers.simplebinaryhandler;
 
+import it.sssupserver.app.base.BufferManager;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.schedulables.*;
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.users.Identity;
 
-import java.io.*;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class SimpleBinarySchedulableTruncateCommand extends SchedulableTruncateCommand {
@@ -33,22 +32,21 @@ public class SimpleBinarySchedulableTruncateCommand extends SchedulableTruncateC
 
     @Override
     public void reply(boolean success) throws Exception {
-        // 12 bytes header, no payload + 4 for v 4
-        var bytes = new ByteArrayOutputStream(12+4);
-        var bs = new DataOutputStream(bytes);
-        // write data to buffer
-        bs.writeInt(this.version);    // version
-        if (this.version >= 3) {
-            // write marker
-            bs.writeInt(this.marker);
+        // 12 bytes header + 4 if v>=3 + total_len for payload
+        try (var wrapper = BufferManager.getBuffer()) {
+            var buffer = wrapper.get();
+            buffer.putInt(this.version);    // version
+            if (this.version >= 3) {
+                buffer.putInt(this.marker);
+            }
+            buffer.putShort((short)4);  // command: TRUNCATE
+            buffer.putShort((short)1);  // category: answer
+            buffer.put((byte)(success?1:0)); // result
+            buffer.put(new byte[3]);    // padding
+            buffer.flip();
+            // now data can be sent
+            this.out.write(buffer);
         }
-        bs.writeShort(4);  // command: TRUNCATE
-        bs.writeShort(1);  // category: answer
-        bs.writeBoolean(success);    // data bytes
-        bs.write(new byte[3]);  // padding
-        bs.flush();
-        // now data can be sent
-        this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
         // close connection
         this.out.close();
     }

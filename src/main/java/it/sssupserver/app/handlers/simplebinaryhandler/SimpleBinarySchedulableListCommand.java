@@ -1,13 +1,12 @@
 package it.sssupserver.app.handlers.simplebinaryhandler;
 
+import it.sssupserver.app.base.BufferManager;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.users.Identity;
 
-import java.io.*;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 
@@ -23,62 +22,73 @@ public class SimpleBinarySchedulableListCommand extends SchedulableListCommand {
         return this.user;
     }
 
+    private int version;
+    private int marker;
     private SocketChannel out;
-    public SimpleBinarySchedulableListCommand(ListCommand cmd, SocketChannel out) {
+    public SimpleBinarySchedulableListCommand(ListCommand cmd, SocketChannel out, int version, int marker) {
         super(cmd);
         this.out = out;
+        this.version = version;
+        this.marker = marker;
     }
 
     @Override
     public void reply(Collection<Path> content) throws Exception {
         var array = new byte[content.size()][];
-        int total_len = 0, i = 0;
+        int i = 0;
         for (var item : content) {
             var tmp = SimpleBinaryHandler.serializeString(item.toString());
-            total_len += tmp.length;
             array[i++] = tmp;
         }
 
-        // 16 bytes header + total_len for payload
-        var bytes = new ByteArrayOutputStream(16 + total_len);
-        var bs = new DataOutputStream(bytes);
-        // write data to buffer
-        bs.writeInt(this.isAuthenticated() ? 2 : 1);    // version
-        bs.writeShort(7);  // command: LIST
-        bs.writeShort(1);  // category: answer
-        bs.writeShort(0);  // status: OK
-        bs.writeShort(0);  // padding
-        bs.writeInt(array.length);  // number of strings
-        for (var item : array) {
-            bs.write(item);
+        // 16 bytes header + 4 if v>=3 + total_len for payload
+        try (var wrapper = BufferManager.getBuffer()) {
+            var buffer = wrapper.get();
+            buffer.putInt(this.version);    // version
+            if (this.version >= 3) {
+                buffer.putInt(this.marker);
+            }
+            buffer.putShort((short)7);  // command: LIST
+            buffer.putShort((short)1);  // category: answer
+            buffer.putShort((short)0);  // status: OK
+            buffer.putShort((short)0);  // padding
+            buffer.putInt(array.length);    // number of strings
+            for (var item : array) {
+                buffer.put(item);
+            }
+            buffer.flip();
+            // now data can be sent
+            this.out.write(buffer);
         }
-        bs.flush();
-        // now data can be sent
-        this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
         // close connection
         this.out.close();
     }
 
     public void notFound() throws Exception {
-        // 12 bytes header, no payload
-        var bytes = new ByteArrayOutputStream(12);
-        var bs = new DataOutputStream(bytes);
-        // write data to buffer
-        bs.writeInt(this.isAuthenticated() ? 2 : 1);    // version
-        bs.writeShort(7);  // command: LIST
-        bs.writeShort(1);  // category: answer
-        bs.writeShort(0);  // status: ERROR
-        bs.writeShort(0);  // padding
-        bs.flush();
-        // now data can be sent
-        this.out.write(ByteBuffer.wrap(bytes.toByteArray()));
+        // 12 bytes header + 4 if v>=3, no payload
+        try (var wrapper = BufferManager.getBuffer()) {
+            var buffer = wrapper.get();
+            buffer.putInt(this.version);    // version
+            if (this.version >= 3) {
+                buffer.putInt(this.marker);
+            }
+            buffer.putShort((short)7);  // command: LIST
+            buffer.putShort((short)1);  // category: answer
+            buffer.putShort((short)1);  // status: ERROR
+            buffer.putShort((short)0);  // padding
+            buffer.flip();
+            // now data can be sent
+            this.out.write(buffer);
+        }
+        // close connection
+        this.out.close();
     }
 
     public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
         SimpleBinaryHandler.checkCategory(sc);
         var path = SimpleBinaryHelper.readString(sc);
         var cmd = new ListCommand(new Path(path));
-        var schedulable = new SimpleBinarySchedulableListCommand(cmd, sc);
+        var schedulable = new SimpleBinarySchedulableListCommand(cmd, sc, version, marker);
         schedulable.setUser(user);
         executor.scheduleExecution(schedulable);
     }

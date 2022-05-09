@@ -81,19 +81,22 @@ public class SimpleBinarySchedulableAppendCommand extends SchedulableAppendComma
         }
     }
 
-    private static void reply(SocketChannel sc, int version, boolean success) throws Exception {
-        // 12 bytes header, no payload
-        var bytes = new ByteArrayOutputStream(12);
-        var bs = new DataOutputStream(bytes);
-        // write data to buffer
-        bs.writeInt(version);   // version
-        bs.writeShort(5);  // command: APPEND
-        bs.writeShort(1);  // category: answer
-        bs.writeBoolean(success);    // data bytes
-        bs.write(new byte[3]);  // padding
-        bs.flush();
-        // now data can be sent
-        sc.write(ByteBuffer.wrap(bytes.toByteArray()));
+    private static void reply(SocketChannel sc, int version, int marker, boolean success) throws Exception {
+        // 12 bytes header + 4 if v>=3 + total_len for payload
+        try (var wrapper = BufferManager.getBuffer()) {
+            var buffer = wrapper.get();
+            buffer.putInt(version);    // version
+            if (version >= 3) {
+                buffer.putInt(marker);
+            }
+            buffer.putShort((short)5);  // command: APPEND
+            buffer.putShort((short)1);  // category: answer
+            buffer.put((byte)(success?1:0)); // result
+            buffer.put(new byte[3]);    // padding
+            buffer.flip();
+            // now data can be sent
+            sc.write(buffer);
+        }
         // close connection
         sc.close();
     }
@@ -133,7 +136,7 @@ public class SimpleBinarySchedulableAppendCommand extends SchedulableAppendComma
                 break;
             }
         } while (read != length);
-        reply(sc, version, success);
+        reply(sc, version, marker, success);
         // consume unused data
         if (read != length) {
             try (var wrapper = BufferManager.getBuffer();) {

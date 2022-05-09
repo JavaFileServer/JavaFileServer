@@ -70,22 +70,21 @@ public class SimpleBinarySchedulableCreateCommand extends SchedulableCreateComma
     }
 
     private static void reply(SocketChannel sc, int version, int marker, boolean success) throws Exception {
-        // 12 bytes header, no payload
-        var bytes = new ByteArrayOutputStream(12);
-        var bs = new DataOutputStream(bytes);
-        // write data to buffer
-        bs.writeInt(version);   // version
-        if (version >= 3) {
-            // add marker
-            bs.writeInt(marker);
+        // 12 bytes header + 4 if v>=3 + total_len for payload
+        try (var wrapper = BufferManager.getBuffer()) {
+            var buffer = wrapper.get();
+            buffer.putInt(version);    // version
+            if (version >= 3) {
+                buffer.putInt(marker);
+            }
+            buffer.putShort((short)9);  // command: CREATE
+            buffer.putShort((short)1);  // category: answer
+            buffer.put((byte)(success?1:0)); // result
+            buffer.put(new byte[3]);    // padding
+            buffer.flip();
+            // now data can be sent
+            sc.write(buffer);
         }
-        bs.writeShort(9);  // command: CREATE
-        bs.writeShort(1);  // category: answer
-        bs.writeBoolean(success);    // data bytes
-        bs.write(new byte[3]);  // padding
-        bs.flush();
-        // now data can be sent
-        sc.write(ByteBuffer.wrap(bytes.toByteArray()));
         // close connection
         sc.close();
     }
