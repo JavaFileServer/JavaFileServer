@@ -16,7 +16,7 @@ public class Helpers {
     public static void sendFull(FileChannel file, SocketChannel sc, long length) throws IOException {
         long sent = 0;
         do {
-            sent += file.transferTo(0, length, sc);
+            sent += file.transferTo(sent, length-sent, sc);
         } while (sent != length);
     }
 
