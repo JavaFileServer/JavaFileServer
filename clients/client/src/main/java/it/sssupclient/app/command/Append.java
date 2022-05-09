@@ -89,8 +89,6 @@ public class Append implements Command {
         try (var wrapper = BufferManager.getBuffer()) {
             var buffer = wrapper.get();
             buffer.putInt(this.version);
-            buffer.putShort(this.getType());
-            buffer.putShort((short)0);
             if (this.version >= 3) {
                 this.marker = new Random(Instant.now().toEpochMilli()).nextInt();
                 buffer.putInt(this.marker);
@@ -98,6 +96,8 @@ public class Append implements Command {
             if (this.version >= 2) {
                 buffer.put(Helpers.serializeString(this.username));
             }
+            buffer.putShort(this.getType());
+            buffer.putShort((short)0);
             buffer.put(Helpers.serializeString(this.path));
             // length
             var length = this.fin.size();
