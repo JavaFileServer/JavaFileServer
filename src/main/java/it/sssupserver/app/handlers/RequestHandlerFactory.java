@@ -27,7 +27,7 @@ public class RequestHandlerFactory {
     private static HandlerArgs parseArgs(String[] args) {
         var ans = new HandlerArgs();
         try {
-            for (int i=0; i!=args.length; ++i) {
+            if (args != null) for (int i=0; i!=args.length; ++i) {
                 var a = args[i];
                 if (a.equals("--")) {
                     break;
