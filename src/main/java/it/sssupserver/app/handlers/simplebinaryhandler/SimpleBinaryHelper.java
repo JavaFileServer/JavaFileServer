@@ -1,5 +1,6 @@
 package it.sssupserver.app.handlers.simplebinaryhandler;
 
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 
@@ -9,6 +10,18 @@ import it.sssupserver.app.base.BufferManager;
  * Auxiliary class with static helper methods
  */
 public class SimpleBinaryHelper {
+    public static ByteBuffer readFull(SocketChannel sc, ByteBuffer buf) {
+        while(buf.hasRemaining()) {
+            try {
+                sc.read(buf);
+            } catch (Exception e) {
+                System.err.println("Read failed: " + e);
+            }
+        }
+        buf.flip();
+        return buf;
+    }
+
     public static BufferManager.BufferWrapper readBytes(SocketChannel sc, int length) {
         var wrapper = BufferManager.getBuffer();
         var buf = wrapper.get();
