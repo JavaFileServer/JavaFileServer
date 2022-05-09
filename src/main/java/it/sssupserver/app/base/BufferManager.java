@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * BufferManager
  */
 public class BufferManager {
-    public static final int DEFAULT_BUFFER_SIZE = 1 << 16;
+    public static final int DEFAULT_BUFFER_SIZE = 1 << 24;
 
     private static Queue<ByteBuffer> bufferQueue = new ConcurrentLinkedQueue<>();
 
@@ -39,8 +39,13 @@ public class BufferManager {
 
     public static BufferWrapper getBuffer() {
         var buffer = bufferQueue.poll();
-        return new BufferWrapper(buffer == null
-                ? ByteBuffer.allocateDirect(DEFAULT_BUFFER_SIZE)
-                : buffer);
+        try {
+            return new BufferWrapper(buffer == null
+                    ? ByteBuffer.allocateDirect(DEFAULT_BUFFER_SIZE)
+                    : buffer);            
+        } catch (Exception e) {
+            System.err.println("Catastrofe: " + e);
+            return null;
+        }
     }
 }
