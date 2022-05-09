@@ -36,6 +36,7 @@ public class App
 
     static String host = "localhost";
     static int port = 5050;
+    static String username;
     static SocketChannel connect() {
         var address = new InetSocketAddress(host, port);
         try {
@@ -105,6 +106,7 @@ public class App
         System.err.println("\tGeneric parameters (i.e. valid for any command):");
         System.err.println("\t\t--host hostname: host name or address to connect at, default 'localhost'");
         System.err.println("\t\t--port number: TCP port to connect at, default '5050'");
+        System.err.println("\t\t--user name: username to use to perform operation on the server");
         System.err.println();
         System.err.println("\tAvailable commands:");
         for (var cmd : commands.entrySet()) {
@@ -121,7 +123,7 @@ public class App
             System.err.println("Unknow command: '" + cmd + "'");
             help();
         } else {
-            handleCommand(command, protocol_version, null, args);
+            handleCommand(command, protocol_version, username, args);
         }
     }
 
@@ -150,6 +152,12 @@ public class App
                             panic("Missing value for parameter port");
                         }
                         host = args[++i];
+                        break;
+                    case "user":
+                        if (i + 1 == args.length) {
+                            panic("Missing value for parameter user");
+                        }
+                        username = args[++i];
                         break;
                     default:
                         panic("Unknown parameter '" + parameter + "'");
