@@ -102,8 +102,8 @@ public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand
     public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
         SimpleBinaryHandler.checkCategory(sc);
         var path = new Path(SimpleBinaryHelper.readString(sc));
-        var offset = SimpleBinaryHelper.readInt(sc);
-        var length = SimpleBinaryHelper.readInt(sc);
+        var offset = version < 4 ? SimpleBinaryHelper.readInt(sc) : SimpleBinaryHelper.readLong(sc);
+        var length = version < 4 ? SimpleBinaryHelper.readInt(sc) : SimpleBinaryHelper.readLong(sc);
         var success = write(executor, sc, user, path, offset, length);
         reply(sc, version, marker, success);
     }
