@@ -22,7 +22,7 @@ public class SimpleBinaryHelper {
         return buf;
     }
 
-    public static BufferManager.BufferWrapper readBytes(SocketChannel sc, int length) {
+    public static BufferManager.BufferWrapper readBytes(SocketChannel sc, int length) throws InterruptedException {
         var wrapper = BufferManager.getBuffer();
         var buf = wrapper.get();
         buf.limit(length);
@@ -37,31 +37,31 @@ public class SimpleBinaryHelper {
         return wrapper;
     }
 
-    public static long readLong(SocketChannel sc) {
+    public static long readLong(SocketChannel sc) throws InterruptedException {
         try (var ans = readBytes(sc, 8);) {
             return ans.get().getLong();
         }
     }
 
-    public static int readInt(SocketChannel sc) {
+    public static int readInt(SocketChannel sc) throws InterruptedException {
         try (var ans = readBytes(sc, 4);) {
             return ans.get().getInt();
         }
     }
 
-    public static short readShort(SocketChannel sc) {
+    public static short readShort(SocketChannel sc) throws InterruptedException {
         try (var ans = readBytes(sc, 2);) {
             return ans.get().getShort();
         }
     }
 
-    public static short readByte(SocketChannel sc) {
+    public static short readByte(SocketChannel sc) throws InterruptedException {
         try (var ans = readBytes(sc, 1);) {
             return ans.get().get();
         }
     }
 
-    public static String readString(SocketChannel sc) {
+    public static String readString(SocketChannel sc) throws InterruptedException {
         var length = readInt(sc);
         if (length == 0) {
             return "";
