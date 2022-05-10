@@ -77,19 +77,42 @@ public class Read implements Command {
         this.fout.write(buffer, total_offset);
     }
 
+    // total number of bytes read so far
+    private long totalRead;
+    // total number of bytes to read excluding the last chunk
+    private long expectedRead;
+    // was the last chunk of the response readby the server?
+    private boolean lastChunkReceived;
+
+    // have all chunks been received?
+    private boolean completed() {
+        // a response has been totally received if we have received
+        // the last chunk of the file and all bytes preceding it
+        return this.lastChunkReceived && this.expectedRead == this.totalRead;
+    }
+
     @Override
     public boolean parseResponseBody(SocketChannel sc) throws Exception {
         var status = Helpers.readShort(sc);
-        var last = false;
         switch (status) {
         case 0:
             var flags = Helpers.readShort(sc);
             if ((flags & 1) != flags) {
                 Helpers.panic("Bad signature: " + flags);
             }
-            last = (flags & 1) == 0;
+            // is this the last chunk of the response?
+            var last = (flags & 1) == 0;
             var offset = this.version < 4 ? Helpers.readInt(sc) : Helpers.readLong(sc);
             var length = this.version < 4 ? Helpers.readInt(sc) : Helpers.readLong(sc);
+            if (!last) {
+                this.totalRead += length;
+            } else {
+                this.lastChunkReceived = true; // se to true
+                // if this is the last chunk 'offset'
+                // represent the total number of bytes
+                // to be received in partial chunks
+                this.expectedRead = offset;
+            }
             try (var wrapper = BufferManager.getBuffer()) {
                 var buffer = wrapper.get();
                 var read = 0L;
@@ -111,7 +134,7 @@ public class Read implements Command {
                 }
             }
             // all data read: print it no stdout
-            if (last && this.toStdout) {
+            if (completed() && this.toStdout) {
                 var w = Channels.newChannel(System.out);
                 this.fout.position(0L);
                 this.fout.transferTo(0, this.fout.size(), w);
@@ -124,16 +147,17 @@ public class Read implements Command {
             Helpers.checkPadding(sc, 2);
             System.out.println("File not found");
             Files.deleteIfExists(this.dest);
-            last = true;
-            break;
+            return true;
         default:
             Helpers.panic("Invalid status: " + status);
         }
-        return last;
+        return completed();
     }
 
     public int marker;
     private void sendMsg(SocketChannel sc) {
+        // initialize state variables to handle response
+        this.totalRead = 0L; this.expectedRead = 0L; this.lastChunkReceived = false;
         try (var wrapper = BufferManager.getBuffer()) {
             var buffer = wrapper.get();
             buffer.putInt(this.version);
