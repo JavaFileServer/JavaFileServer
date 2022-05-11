@@ -37,7 +37,7 @@ public class SimpleBinarySchedulableListCommand extends SchedulableListCommand {
         var array = new byte[content.size()][];
         int i = 0;
         for (var item : content) {
-            var tmp = SimpleBinaryHandler.serializeString(item.toString());
+            var tmp = SimpleBinaryHandler.serializeString(item.toString() + (item.isDir()? "/" : ""));
             array[i++] = tmp;
         }
 
