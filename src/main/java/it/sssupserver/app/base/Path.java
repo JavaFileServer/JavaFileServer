@@ -21,6 +21,9 @@ public class Path {
         return p.isEmpty() || test.test(p);
     }
 
+    // hint suggesting that the Path should point to a directory
+    // code is not required to check it
+    private boolean isDir;
     private String[] path;
     public Path(String p) throws InvalidPathException
     {
@@ -46,6 +49,11 @@ public class Path {
             }
         }
         this.path = tmp;
+    }
+
+    public Path(String p, boolean isDir) throws InvalidPathException {
+        this(p);
+        this.isDir = isDir;
     }
 
     private Path(String[] items) {
@@ -94,6 +102,11 @@ public class Path {
     public boolean isEmpty()
     {
         return this.path.length == 0;
+    }
+
+    public boolean isDir()
+    {
+        return this.isDir;
     }
 
     @Override
