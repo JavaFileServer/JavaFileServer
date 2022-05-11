@@ -390,7 +390,7 @@ public class UserTreeExecutor implements Executor {
                     for (var entry : dirContent) {
                         var r = uFS.userDir.relativize(entry);
                         var e = r.toString();
-                        var p = new Path(e);
+                        var p = new Path(e, Files.isDirectory(entry));
                         items.add(p);
                     }
                     flag.success = true;
