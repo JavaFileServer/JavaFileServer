@@ -99,8 +99,11 @@ public class App
             commands.put(cmd.getName(), cmd);
         }
     }
-
     static void help() {
+        help(0);
+    }
+
+    static void help(int exit_status) {
         System.err.println("Usage:");
         System.err.println("\tcommand [args]");
         System.err.println("\tGeneric parameters (i.e. valid for any command):");
@@ -112,7 +115,7 @@ public class App
         for (var cmd : commands.entrySet()) {
             cmd.getValue().printHelp("\t\t");
         }
-        System.exit(1);
+        System.exit(exit_status);
     }
 
     static void handle(String[] params) throws Exception {
@@ -121,7 +124,7 @@ public class App
         var command = commands.get(cmd);
         if (command == null) {
             System.err.println("Unknow command: '" + cmd + "'");
-            help();
+            help(1);
         } else {
             handleCommand(command, protocol_version, username, args);
         }
