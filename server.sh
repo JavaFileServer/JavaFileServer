@@ -1,5 +1,6 @@
 #!/usr/bin/bash
 
-JDIR=target/classes/
-DIR=$(dirname $0)/$JDIR
-java -cp $DIR it.sssupserver.app.App "$@"
+JAR="my-app-1.0-SNAPSHOT.jar"
+JDIR=target/
+DIR=$(dirname $0)/$JDIR/$JAR
+java -jar $DIR "$@"
