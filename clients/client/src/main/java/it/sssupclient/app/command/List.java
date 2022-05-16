@@ -66,6 +66,7 @@ public class List implements Command {
             break;
         case 1:
             Helpers.checkPadding(sc, 2);
+            System.out.println("Success:false");
             break;
         default:
             Helpers.panic("Invalid status: " + status);
