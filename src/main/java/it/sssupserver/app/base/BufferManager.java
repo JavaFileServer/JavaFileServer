@@ -72,7 +72,7 @@ public class BufferManager {
                 if (limit == 0) {
                     limit = DEFAULT_MEMORY_LIMIT;
                 }
-                if (bufsz < limit) {
+                if (limit < bufsz) {
                     throw new Exception("limit (" + limit + ") cannot be lower than bufsz (" + bufsz + ")");
                 }
                 // check args coerence
