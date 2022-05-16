@@ -159,6 +159,9 @@ public class App
                         }
                         username = args[++i];
                         break;
+                    case "help":
+                        help();
+                        break;
                     default:
                         panic("Unknown parameter '" + parameter + "'");
                         break;
@@ -173,12 +176,9 @@ public class App
 
     public static void main( String[] args ) throws Exception
     {
-        args = extract_globals(args);
         addCommmands();
+        args = extract_globals(args);
         //addHandlers();
-        if (args.length == 0 || args[0].equals("--help")) {
-            help();
-        }
         handle(args);
     }
 }
