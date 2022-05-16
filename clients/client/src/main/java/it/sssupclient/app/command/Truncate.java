@@ -9,7 +9,7 @@ import it.sssupclient.app.BufferManager;
 import it.sssupclient.app.Helpers;
 import it.sssupclient.app.exceptions.InvalidArgumentsException;
 
-public class Truncate implements Command {
+public class Truncate extends Command {
     private int version;
     private String path;
     private String username = null;
@@ -52,7 +52,7 @@ public class Truncate implements Command {
         case 0:
         case 1:
             Helpers.checkPadding(sc, 3);
-            System.out.println("Success:" + (status == 1));
+            System.out.println("Success:" + (this.success = status == 1));
             break;
         default:
             Helpers.panic("Invalid status: " + status);

@@ -17,7 +17,7 @@ import it.sssupclient.app.BufferManager;
 import it.sssupclient.app.Helpers;
 import it.sssupclient.app.exceptions.InvalidArgumentsException;
 
-public class Read implements Command {
+public class Read extends Command {
     private int version;
     private String path;
     private String username = null;
@@ -134,13 +134,16 @@ public class Read implements Command {
                 }
             }
             // all data read: print it no stdout
-            if (completed() && this.toStdout) {
-                var w = Channels.newChannel(System.out);
-                this.fout.position(0L);
-                this.fout.transferTo(0, this.fout.size(), w);
-                this.fout.truncate(0);
-                this.fout.close();
-                Files.delete(this.dest);
+            if (completed()) {
+                if (this.toStdout) {
+                    var w = Channels.newChannel(System.out);
+                    this.fout.position(0L);
+                    this.fout.transferTo(0, this.fout.size(), w);
+                    this.fout.truncate(0);
+                    this.fout.close();
+                    Files.delete(this.dest);
+                }
+                this.success = true;
             }
             break;
         case 1:

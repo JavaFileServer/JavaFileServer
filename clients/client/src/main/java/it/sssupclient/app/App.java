@@ -77,7 +77,8 @@ public class App
         var sc = connect();
         var scheduler = new Scheduler(sc);
         command.exec(sc, scheduler);
-        scheduler.parse();
+        var success = scheduler.parse();
+        System.exit(success ? 0 : 1);
     }
 
     static void addCommmands() {

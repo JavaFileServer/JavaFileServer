@@ -36,8 +36,9 @@ public class Scheduler {
         });
     }
 
-    public void parse() throws Exception {
+    public boolean parse() throws Exception {
         boolean done;
+        Command handler;
         do {
             var version = Helpers.readInt(sc);
             var marker = version < 3 ? 0 : Helpers.readInt(sc);
@@ -46,8 +47,9 @@ public class Scheduler {
             if (category != 1) {
                 Helpers.panic("Bad category, found: " + category);
             }
-            var handler = map.get(version).get(marker).get(type);
+            handler = map.get(version).get(marker).get(type);
             done = handler.parseResponseBody(sc);
         } while (!done);
+        return handler.successful();
     }
 }

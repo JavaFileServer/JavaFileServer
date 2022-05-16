@@ -9,7 +9,7 @@ import it.sssupclient.app.BufferManager;
 import it.sssupclient.app.Helpers;
 import it.sssupclient.app.exceptions.InvalidArgumentsException;
 
-public class Copy implements Command {
+public class Copy extends Command {
     private int version;
     private String src, dst;
     private String username = null;
@@ -46,7 +46,7 @@ public class Copy implements Command {
         case 0:
         case 1:
             Helpers.checkPadding(sc, 3);
-            System.out.println("Success:" + (status == 1));
+            System.out.println("Success:" + (this.success = status == 1));
             break;
         default:
             Helpers.panic("Invalid status: " + status);

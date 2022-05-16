@@ -9,7 +9,7 @@ import it.sssupclient.app.BufferManager;
 import it.sssupclient.app.Helpers;
 import it.sssupclient.app.exceptions.InvalidArgumentsException;
 
-public class List implements Command {
+public class List extends Command {
     private int version;
     private String path;
     private String username = null;
@@ -63,6 +63,7 @@ public class List implements Command {
                     System.out.println(i + ") " + ans[i]);
                 }
             }
+            this.success = true;
             break;
         case 1:
             Helpers.checkPadding(sc, 2);
