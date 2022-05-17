@@ -32,11 +32,8 @@ public class App
         var controller = ControllerFactory.getController();
         executor.start();
         handler.start();
-        //var cmd = handler.receiveCommand();
-        //System.out.println("Cmd: " + cmd);
         controller.run(executor, handler);
         handler.stop();
-        //handler.receiveAndExecuteCommand();
         executor.stop();
     }
 }
