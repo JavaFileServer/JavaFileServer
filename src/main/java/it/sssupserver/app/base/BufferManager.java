@@ -137,6 +137,7 @@ public class BufferManager {
                 if (now <= max_buffer_count) {
                     return new BufferWrapper(ByteBuffer.allocateDirect(buffer_size));
                 } else {
+                    buffer_count.decrementAndGet();
                     return new BufferWrapper(bufferQueue.take());
                 }
             } catch (OutOfMemoryError e) {
