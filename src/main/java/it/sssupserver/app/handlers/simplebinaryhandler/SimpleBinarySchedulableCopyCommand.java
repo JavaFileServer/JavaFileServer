@@ -4,6 +4,7 @@ import it.sssupserver.app.base.BufferManager;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
+import it.sssupserver.app.exceptions.ApplicationException;
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.users.Identity;
 
@@ -60,5 +61,10 @@ public class SimpleBinarySchedulableCopyCommand extends SchedulableCopyCommand {
         var schedulable = new SimpleBinarySchedulableCopyCommand(cmd, sc, version, marker);
         schedulable.setUser(user);
         executor.scheduleExecution(schedulable);
+    }
+
+    @Override
+    public void submit(Executor exe) throws ApplicationException {
+        exe.handle(this);
     }
 }

@@ -1,6 +1,8 @@
 package it.sssupserver.app.commands.schedulables;
 
 import it.sssupserver.app.commands.Command;
+import it.sssupserver.app.exceptions.ApplicationException;
+import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.users.Identity;
 
 /**
@@ -19,4 +21,10 @@ public interface SchedulableCommand extends Command {
     public default boolean isAuthenticated() {
         return this.getUser() != null;
     }
+
+    /**
+     * To be used called by Executor(s) to implement
+     * visitors pattern.
+     */
+    public void submit(Executor exe) throws ApplicationException;
 }

@@ -197,7 +197,7 @@ public class UserTreeExecutor implements Executor {
                 : buffer);
     }
 
-    private void handleRead(SchedulableReadCommand command) throws ApplicationException {
+    public void handle(SchedulableReadCommand command) throws ApplicationException {
         var user = command.getUser();
         var uFS = getUserFS(user);
         var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
@@ -248,7 +248,7 @@ public class UserTreeExecutor implements Executor {
         });
     }
 
-    private void handleCreateOrReplace(SchedulableCreateOrReplaceCommand command) throws ApplicationException {
+    public void handle(SchedulableCreateOrReplaceCommand command) throws ApplicationException {
         var user = command.getUser();
         var uFS = getUserFS(user);
         var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
@@ -283,7 +283,7 @@ public class UserTreeExecutor implements Executor {
         });
     }
 
-    private void handleTruncate(SchedulableTruncateCommand command) throws ApplicationException {
+    public void handle(SchedulableTruncateCommand command) throws ApplicationException {
         var user = command.getUser();
         var uFS = getUserFS(user);
         var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
@@ -310,7 +310,7 @@ public class UserTreeExecutor implements Executor {
         });
     }
 
-    private void handleExists(SchedulableExistsCommand command) throws ApplicationException {
+    public void handle(SchedulableExistsCommand command) throws ApplicationException {
         var user = command.getUser();
         var uFS = getUserFS(user);
         var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
@@ -327,7 +327,7 @@ public class UserTreeExecutor implements Executor {
         });
     }
 
-    private void handleDelete(SchedulableDeleteCommand command) throws ApplicationException {
+    public void handle(SchedulableDeleteCommand command) throws ApplicationException {
         var user = command.getUser();
         var uFS = getUserFS(user);
         var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
@@ -348,7 +348,7 @@ public class UserTreeExecutor implements Executor {
         });
     }
 
-    private void handleAppend(SchedulableAppendCommand command) throws ApplicationException {
+    public void handle(SchedulableAppendCommand command) throws ApplicationException {
         var user = command.getUser();
         var uFS = getUserFS(user);
         var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
@@ -376,7 +376,7 @@ public class UserTreeExecutor implements Executor {
         });
     }
 
-    private void handleList(SchedulableListCommand command) throws ApplicationException {
+    public void handle(SchedulableListCommand command) throws ApplicationException {
         var user = command.getUser();
         var uFS = getUserFS(user);
         var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
@@ -404,7 +404,7 @@ public class UserTreeExecutor implements Executor {
         });
     }
 
-    private void handleWrite(SchedulableWriteCommand command) throws ApplicationException {
+    public void handle(SchedulableWriteCommand command) throws ApplicationException {
         var user = command.getUser();
         var uFS = getUserFS(user);
         var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
@@ -432,7 +432,7 @@ public class UserTreeExecutor implements Executor {
         });
     }
 
-    private void handleCreate(SchedulableCreateCommand command) throws ApplicationException {
+    public void handle(SchedulableCreateCommand command) throws ApplicationException {
         var user = command.getUser();
         var uFS = getUserFS(user);
         var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
@@ -463,7 +463,7 @@ public class UserTreeExecutor implements Executor {
         });
     }
 
-    private void handleCopy(SchedulableCopyCommand command) throws ApplicationException {
+    public void handle(SchedulableCopyCommand command) throws ApplicationException {
         var user = command.getUser();
         var uFS = getUserFS(user);
         var srcPath = java.nio.file.Path.of(uFS.userDir.toString(), command.getSource().getPath());
@@ -489,7 +489,7 @@ public class UserTreeExecutor implements Executor {
         });
     }
 
-    private void handleMove(SchedulableMoveCommand command) throws ApplicationException {
+    public void handle(SchedulableMoveCommand command) throws ApplicationException {
         var user = command.getUser();
         var uFS = getUserFS(user);
         var srcPath = java.nio.file.Path.of(uFS.userDir.toString(), command.getSource().getPath());
@@ -534,7 +534,7 @@ public class UserTreeExecutor implements Executor {
         });
     }
 
-    private void handleMkdir(SchedulableMkdirCommand command) throws ApplicationException {
+    public void handle(SchedulableMkdirCommand command) throws ApplicationException {
         var user = command.getUser();
         var uFS = getUserFS(user);
         var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
@@ -554,33 +554,7 @@ public class UserTreeExecutor implements Executor {
     private boolean started;
     @Override
     public void scheduleExecution(SchedulableCommand command) throws Exception {
-        if (command instanceof SchedulableReadCommand) {
-            handleRead((SchedulableReadCommand)command);
-        } else if (command instanceof SchedulableCreateOrReplaceCommand) {
-            handleCreateOrReplace((SchedulableCreateOrReplaceCommand)command);
-        } else if (command instanceof SchedulableTruncateCommand) {
-            handleTruncate((SchedulableTruncateCommand)command);
-        } else if (command instanceof SchedulableExistsCommand) {
-            handleExists((SchedulableExistsCommand)command);
-        } else if (command instanceof SchedulableDeleteCommand) {
-            handleDelete((SchedulableDeleteCommand)command);
-        } else if (command instanceof SchedulableAppendCommand) {
-            handleAppend((SchedulableAppendCommand)command);
-        } else if (command instanceof SchedulableListCommand) {
-            handleList((SchedulableListCommand)command);
-        } else if (command instanceof SchedulableWriteCommand) {
-            handleWrite((SchedulableWriteCommand)command);
-        } else if (command instanceof SchedulableCreateCommand) {
-            handleCreate((SchedulableCreateCommand)command);
-        } else if (command instanceof SchedulableCopyCommand) {
-            handleCopy((SchedulableCopyCommand)command);
-        } else if (command instanceof SchedulableMoveCommand) {
-            handleMove((SchedulableMoveCommand)command);
-        } else if (command instanceof SchedulableMkdirCommand) {
-            handleMkdir((SchedulableMkdirCommand)command);
-        } else {
-            throw new CommandNotSupportedException(command.getType());
-        }
+        command.submit(this);
     }
 
     @Override

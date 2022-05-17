@@ -3,6 +3,7 @@ package it.sssupserver.app.handlers.simplebinaryhandler;
 import it.sssupserver.app.base.BufferManager;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.schedulables.*;
+import it.sssupserver.app.exceptions.ApplicationException;
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.users.Identity;
 
@@ -149,4 +150,8 @@ public class SimpleBinarySchedulableCreateCommand extends SchedulableCreateComma
         }
     }
 
+    @Override
+    public void submit(Executor exe) throws ApplicationException {
+        exe.handle(this);
+    }
 }
