@@ -92,7 +92,7 @@ public class SimpleBinaryHandler implements RequestHandler {
                 }
 
                 switch (type = SimpleBinaryHelper.readShort(schannel)) {
-                    case 1:
+                case 1:
                     SimpleBinarySchedulableReadCommand.handle(executor, schannel, version, user, marker);
                     break;
                 case 2:
