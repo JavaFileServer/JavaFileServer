@@ -104,19 +104,45 @@ public class App
         help(0);
     }
 
+    // Display help for specified command or for all them
+    static void help(String cmd) {
+        if (cmd == null) {
+            help();
+        } else {
+            var command = commands.get(cmd);
+            if (command == null) {
+                if (cmd != null) {
+                    System.err.println("Unknown command '" + cmd + "'");
+                }
+                System.err.println("Available commands:");
+                for (var c : commands.entrySet()) {
+                    c.getValue().printHelp("\t");
+                }
+            } else {
+                System.err.println("Usage:");
+                command.printHelp("\t");
+            }
+        }
+        System.exit(0);
+    }
+
     static void help(int exit_status) {
         System.err.println("Usage:");
         System.err.println("\tcommand [args]");
-        System.err.println("\tGeneric parameters (i.e. valid for any command):");
-        System.err.println("\t\t--host hostname: host name or address to connect at, default 'localhost'");
-        System.err.println("\t\t--port number: TCP port to connect at, default '5050'");
-        System.err.println("\t\t--user name: username to use to perform operation on the server");
-        System.err.println();
+        genericHelp();
         System.err.println("\tAvailable commands:");
         for (var cmd : commands.entrySet()) {
             cmd.getValue().printHelp("\t\t");
         }
         System.exit(exit_status);
+    }
+
+    private static void genericHelp() {
+        System.err.println("\tGeneric parameters (i.e. valid for any command):");
+        System.err.println("\t\t--host hostname: host name or address to connect at, default 'localhost'");
+        System.err.println("\t\t--port number: TCP port to connect at, default '5050'");
+        System.err.println("\t\t--user name: username to use to perform operation on the server");
+        System.err.println();
     }
 
     static void handle(String[] params) throws Exception {
@@ -164,7 +190,7 @@ public class App
                         username = args[++i];
                         break;
                     case "help":
-                        help();
+                        help(args[0]);
                         break;
                     default:
                         panic("Unknown parameter '" + parameter + "'");
