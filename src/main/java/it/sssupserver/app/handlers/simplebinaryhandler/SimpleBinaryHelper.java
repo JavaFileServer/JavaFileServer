@@ -11,7 +11,7 @@ import it.sssupserver.app.base.BufferManager;
  */
 public class SimpleBinaryHelper {
     public static ByteBuffer readFull(SocketChannel sc, ByteBuffer buf) {
-        while(buf.hasRemaining()) {
+        while (buf.hasRemaining()) {
             try {
                 sc.read(buf);
             } catch (Exception e) {
