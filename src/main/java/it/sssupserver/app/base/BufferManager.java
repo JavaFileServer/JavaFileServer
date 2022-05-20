@@ -20,6 +20,10 @@ public class BufferManager {
     public static final long DEFAULT_MEMORY_LIMIT = (long)DEFAULT_BUFFER_SIZE*(long)DEFAULT_BUFFER_COUNT;
     private static int buffer_size = DEFAULT_BUFFER_SIZE;
     private static int max_buffer_count = DEFAULT_BUFFER_COUNT;
+
+    // use direct buffers
+    private static boolean default_direct = true;
+    private static boolean use_direct = true;
     
     // Command line arguments starting with this prefix
     // are intended as directed to the buffer manager
@@ -32,6 +36,8 @@ public class BufferManager {
         System.err.println(lpadding + "Arguments recognised by request handlers:");
         System.err.println(lpadding + "\t" + argsPrefix + "bufsz size: buffer size in KB");
         System.err.println(lpadding + "\t" + argsPrefix + "limit size: max size in KB for all buffers");
+        System.err.println(lpadding + "\t" + argsPrefix + "direct: use direct buffers" + (BufferManager.default_direct ? " (default)" : ""));
+        System.err.println(lpadding + "\t" + argsPrefix + "nodirect: do not use direct buffers" + (!BufferManager.default_direct ? " (default)" : ""));
     }
 
     public static void parseArgs(String[] args) {
@@ -39,6 +45,7 @@ public class BufferManager {
             if (args != null) {
                 int bufsz = 0;
                 long limit = 0L;
+                boolean direct = false, nodirect = false;
                 for (int i=0; i!=args.length; ++i) {
                     var a = args[i];
                     if (a.equals("--")) {
@@ -58,10 +65,21 @@ public class BufferManager {
                                 }
                                 limit = Long.parseLong(args[++i]) << 10;
                                 break;
+                            case "direct":
+                                direct = true;
+                                break;
+                            case "nodirect":
+                                nodirect = true;
+                                break;
                             default:
                                 throw new Exception("Unrecognised argument '" + a + "'");
                         }
                     }
+                }
+                if (nodirect && direct) {
+                    throw new Exception("Cannot mix '" + argsPrefix + "direct' with '" + argsPrefix + "nodirect'");
+                } else {
+                    BufferManager.use_direct = nodirect ? false : (direct ? true :  BufferManager.default_direct);
                 }
                 if (bufsz == 0) {
                     bufsz = DEFAULT_BUFFER_SIZE;
@@ -79,8 +97,8 @@ public class BufferManager {
                 if (limit % bufsz != 0) {
                     throw new Exception("limit (" + limit + ") is not a multiple of bufsz (" + bufsz + ")");
                 }
-                buffer_size = bufsz;
-                max_buffer_count = (int)(limit / bufsz);
+                BufferManager.buffer_size = bufsz;
+                BufferManager.max_buffer_count = (int)(limit / bufsz);
                 // check for overflow
                 if ((long)max_buffer_count != limit / bufsz) {
                     throw new Exception("Cannot handle " + limit / bufsz + " buffers");
@@ -135,7 +153,7 @@ public class BufferManager {
             try {
                 var now = buffer_count.incrementAndGet();
                 if (now <= max_buffer_count) {
-                    return new BufferWrapper(ByteBuffer.allocateDirect(buffer_size));
+                    return new BufferWrapper(BufferManager.use_direct ? ByteBuffer.allocateDirect(buffer_size) : ByteBuffer.allocate(buffer_size));
                 } else {
                     buffer_count.decrementAndGet();
                     return new BufferWrapper(bufferQueue.take());
