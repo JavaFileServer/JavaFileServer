@@ -16,4 +16,5 @@ public enum Type {
     COPY,
     MOVE,
     MKDIR,
+    SIZE,
 }
