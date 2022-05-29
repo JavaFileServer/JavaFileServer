@@ -4,6 +4,8 @@ import java.util.Collection;
 
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.ListCommand;
+import it.sssupserver.app.exceptions.ApplicationException;
+import it.sssupserver.app.executors.Executor;
 
 public abstract class SchedulableListCommand extends ListCommand implements SchedulableCommand {
     protected SchedulableListCommand(ListCommand cmd)
@@ -13,4 +15,9 @@ public abstract class SchedulableListCommand extends ListCommand implements Sche
 
     public abstract void reply(Collection<Path> content) throws Exception;
     public abstract void notFound() throws Exception;
+
+    @Override
+    public final void submit(Executor exe) throws ApplicationException {
+        exe.handle(this);
+    }
 }
