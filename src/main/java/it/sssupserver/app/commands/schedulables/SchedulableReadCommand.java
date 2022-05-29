@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import it.sssupserver.app.commands.ReadCommand;
+import it.sssupserver.app.exceptions.ApplicationException;
+import it.sssupserver.app.executors.Executor;
 
 public abstract class SchedulableReadCommand extends ReadCommand implements SchedulableCommand {
     protected SchedulableReadCommand(ReadCommand cmd)
@@ -59,4 +61,9 @@ public abstract class SchedulableReadCommand extends ReadCommand implements Sche
     }
     public abstract void reply(ByteBuffer[] data) throws Exception;
     public abstract void notFound() throws Exception;
+
+    @Override
+    public final void submit(Executor exe) throws ApplicationException {
+        exe.handle(this);
+    }
 }

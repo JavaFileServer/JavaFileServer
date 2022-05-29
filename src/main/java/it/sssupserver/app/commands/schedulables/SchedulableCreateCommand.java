@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.CreateCommand;
+import it.sssupserver.app.exceptions.ApplicationException;
+import it.sssupserver.app.executors.Executor;
 
 public abstract class SchedulableCreateCommand extends CreateCommand implements SchedulableCommand {
     protected SchedulableCreateCommand(CreateCommand cmd)
@@ -17,4 +19,9 @@ public abstract class SchedulableCreateCommand extends CreateCommand implements 
     }
 
     public abstract void reply(boolean success) throws Exception;
+
+    @Override
+    public final void submit(Executor exe) throws ApplicationException {
+        exe.handle(this);
+    }
 }
