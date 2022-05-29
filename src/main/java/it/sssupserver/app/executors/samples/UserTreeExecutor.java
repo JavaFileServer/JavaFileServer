@@ -49,6 +49,9 @@ public class UserTreeExecutor implements Executor {
     static int MAX_CHUNK_SIZE = 1 << 16;
     // At most WORKER_THREAD_COUNT will be used
     // to handle client requests
+    // Value returned might change if machine processors
+    // are activated or blocked. This possibility is
+    // currently ignored.
     static int WORKER_THREAD_COUNT = Runtime.getRuntime().availableProcessors();
 
     // This class represent the subtree of the machine FS
