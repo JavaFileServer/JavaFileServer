@@ -552,6 +552,37 @@ public class UserTreeExecutor implements Executor {
         });
     }
 
+    @Override
+    public void handle(SchedulableSizeCommand command) throws ApplicationException {
+        var user = command.getUser();
+        var uFS = getUserFS(user);
+        var path = java.nio.file.Path.of(uFS.userDir.toString(), command.getPath().getPath());
+        pool.submit(() -> {
+            var flag = new Object(){
+                public boolean found = false;
+                public long size = 0L;
+            };
+            try (var lock = uFS.readLock()) {
+                uFS.filemap.compute(path, (p, fin) -> {
+                    try {
+                        if (fin == null) {
+                            fin = FileChannel.open(p, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.SPARSE);
+                        }
+                        flag.size = fin.size();
+                        flag.found = true;
+                    } catch (IOException e) { 
+                        return null;
+                    }
+                    return fin;
+                });
+            }
+            if (flag.found) {
+                try { command.reply(flag.size); } catch (Exception e) { }
+            } else {
+                try { command.notFound(); } catch (Exception e) { }
+            }
+        });
+    }
 
     private boolean started;
     @Override
