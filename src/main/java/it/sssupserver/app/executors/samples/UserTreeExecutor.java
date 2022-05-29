@@ -26,7 +26,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.schedulables.*;
 import it.sssupserver.app.exceptions.ApplicationException;
-import it.sssupserver.app.exceptions.CommandNotSupportedException;
 import it.sssupserver.app.executors.Executor;
 import it.sssupserver.app.users.Identity;
 
