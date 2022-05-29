@@ -80,4 +80,8 @@ public interface Executor {
     public default void handle(SchedulableMkdirCommand command) throws ApplicationException {
         throw new CommandNotSupportedException(command.getType());
     }
+
+    public default void handle(SchedulableSizeCommand command) throws ApplicationException {
+        throw new CommandNotSupportedException(command.getType());
+    }
 }
