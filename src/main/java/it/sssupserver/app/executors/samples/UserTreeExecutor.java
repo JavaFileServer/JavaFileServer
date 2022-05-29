@@ -49,7 +49,7 @@ public class UserTreeExecutor implements Executor {
     static int MAX_CHUNK_SIZE = 1 << 16;
     // At most WORKER_THREAD_COUNT will be used
     // to handle client requests
-    static int WORKER_THREAD_COUNT = 8;
+    static int WORKER_THREAD_COUNT = Runtime.getRuntime().availableProcessors();
 
     // This class represent the subtree of the machine FS
     // 'owned' by a certain user.
