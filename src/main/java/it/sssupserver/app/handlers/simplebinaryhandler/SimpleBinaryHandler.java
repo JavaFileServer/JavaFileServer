@@ -128,6 +128,9 @@ public class SimpleBinaryHandler implements RequestHandler {
                 case 12:
                     SimpleBinarySchedulableMkdirCommand.handle(executor, schannel, version, user, marker);
                     break;
+                case 13:
+                    SimpleBinarySchedulableSizeCommand.handle(executor, schannel, version, user, marker);
+                    break;
                 default:
                     throw new Exception("Unknown message type: " + type);
                 }

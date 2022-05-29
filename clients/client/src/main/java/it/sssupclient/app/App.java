@@ -20,6 +20,7 @@ import it.sssupclient.app.command.Read;
 import it.sssupclient.app.command.Scheduler;
 import it.sssupclient.app.command.Truncate;
 import it.sssupclient.app.command.Write;
+import it.sssupclient.app.command.Size;
 
 /**
  * Hello world!
@@ -95,6 +96,7 @@ public class App
             new Move(),
             new Copy(),
             new Write(),
+            new Size(),
         };
         for (var cmd : cmds) {
             commands.put(cmd.getName(), cmd);
