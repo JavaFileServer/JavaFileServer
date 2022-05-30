@@ -1,9 +1,9 @@
-package it.sssupserver.app.executors.samples;
+package it.sssupserver.app.filemanagers.samples;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import it.sssupserver.app.executors.SynchronousExecutor;
+import it.sssupserver.app.filemanagers.SynchronousExecutor;
 import it.sssupserver.app.commands.schedulables.SchedulableAppendCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableCreateOrReplaceCommand;

@@ -4,7 +4,7 @@ import it.sssupserver.app.base.BufferManager;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
-import it.sssupserver.app.executors.Executor;
+import it.sssupserver.app.filemanagers.FileManager;
 import it.sssupserver.app.users.Identity;
 
 import java.io.*;
@@ -141,7 +141,7 @@ public class SimpleBinarySchedulableReadCommand extends SchedulableReadCommand {
         this.out.close();
     }
 
-    public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
+    public static void handle(FileManager executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
         SimpleBinaryHandler.checkCategory(sc);
         String path = SimpleBinaryHelper.readString(sc);
         long begin = version < 4 ? SimpleBinaryHelper.readInt(sc) : SimpleBinaryHelper.readLong(sc);

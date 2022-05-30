@@ -1,7 +1,7 @@
 package it.sssupserver.app.controllers.samples;
 
 import it.sssupserver.app.controllers.Controller;
-import it.sssupserver.app.executors.Executor;
+import it.sssupserver.app.filemanagers.FileManager;
 import it.sssupserver.app.handlers.RequestHandler;
 
 public class TimedController implements Controller {
@@ -14,7 +14,7 @@ public class TimedController implements Controller {
     }
 
     @Override
-    public void run(Executor executor, RequestHandler requestHandler) throws InterruptedException {
+    public void run(FileManager executor, RequestHandler requestHandler) throws InterruptedException {
         Thread.sleep(this.millis);
     }
 }

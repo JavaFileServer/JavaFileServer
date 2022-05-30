@@ -1,6 +1,6 @@
 package it.sssupserver.app.handlers;
 
-import it.sssupserver.app.executors.Executor;
+import it.sssupserver.app.filemanagers.FileManager;
 import it.sssupserver.app.handlers.simplebinaryhandler.*;
 
 /**
@@ -53,11 +53,11 @@ public class RequestHandlerFactory {
         return ans;
     }
 
-    public static RequestHandler getRequestHandler(Executor executor) throws Exception {
+    public static RequestHandler getRequestHandler(FileManager executor) throws Exception {
         return getRequestHandler(executor, null);
     }
 
-    public static RequestHandler getRequestHandler(Executor executor, String[] args) throws Exception {
+    public static RequestHandler getRequestHandler(FileManager executor, String[] args) throws Exception {
         var a = parseArgs(args);
         return new SimpleBinaryHandler(executor, a.port);
     }

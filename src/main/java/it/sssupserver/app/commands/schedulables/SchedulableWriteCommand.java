@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.WriteCommand;
 import it.sssupserver.app.exceptions.ApplicationException;
-import it.sssupserver.app.executors.Executor;
+import it.sssupserver.app.filemanagers.FileManager;
 
 public abstract class SchedulableWriteCommand extends WriteCommand implements SchedulableCommand {
     protected SchedulableWriteCommand(WriteCommand cmd)
@@ -20,7 +20,7 @@ public abstract class SchedulableWriteCommand extends WriteCommand implements Sc
     public abstract void reply(boolean success) throws Exception;
 
     @Override
-    public final void submit(Executor exe) throws ApplicationException {
+    public final void submit(FileManager exe) throws ApplicationException {
         exe.handle(this);
     }
 }

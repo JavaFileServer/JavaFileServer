@@ -5,7 +5,7 @@ import java.nio.channels.FileChannel;
 
 import it.sssupserver.app.commands.ReadCommand;
 import it.sssupserver.app.exceptions.ApplicationException;
-import it.sssupserver.app.executors.Executor;
+import it.sssupserver.app.filemanagers.FileManager;
 
 public abstract class SchedulableReadCommand extends ReadCommand implements SchedulableCommand {
     protected SchedulableReadCommand(ReadCommand cmd)
@@ -63,7 +63,7 @@ public abstract class SchedulableReadCommand extends ReadCommand implements Sche
     public abstract void notFound() throws Exception;
 
     @Override
-    public final void submit(Executor exe) throws ApplicationException {
+    public final void submit(FileManager exe) throws ApplicationException {
         exe.handle(this);
     }
 }

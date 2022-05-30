@@ -1,4 +1,4 @@
-package it.sssupserver.app.executors.samples;
+package it.sssupserver.app.filemanagers.samples;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -26,10 +26,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.schedulables.*;
 import it.sssupserver.app.exceptions.ApplicationException;
-import it.sssupserver.app.executors.Executor;
+import it.sssupserver.app.filemanagers.FileManager;
 import it.sssupserver.app.users.Identity;
 
-public class UserTreeExecutor implements Executor {
+public class UserTreeExecutor implements FileManager {
     private java.nio.file.Path baseDir;
     private String unknown_users = "unknown";
     // prefix identifying

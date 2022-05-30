@@ -2,7 +2,7 @@ package it.sssupserver.app.handlers.simplebinaryhandler;
 
 import it.sssupserver.app.handlers.*;
 import it.sssupserver.app.users.Identity;
-import it.sssupserver.app.executors.Executor;
+import it.sssupserver.app.filemanagers.FileManager;
 
 import java.net.*;
 import java.nio.channels.ClosedByInterruptException;
@@ -15,16 +15,16 @@ import java.io.*;
 public class SimpleBinaryHandler implements RequestHandler {
 
     private int port;
-    private Executor executor;
+    private FileManager executor;
 
     private static int DEFAULT_PORT = 5050;
 
-    public SimpleBinaryHandler(Executor executor) throws Exception
+    public SimpleBinaryHandler(FileManager executor) throws Exception
     {
         this(executor, DEFAULT_PORT);
     }
 
-    public SimpleBinaryHandler(Executor executor, int port) throws Exception
+    public SimpleBinaryHandler(FileManager executor, int port) throws Exception
     {
         if (!(port < (1<<16)))
         {

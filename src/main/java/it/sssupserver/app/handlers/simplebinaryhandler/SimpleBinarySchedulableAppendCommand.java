@@ -4,7 +4,7 @@ import it.sssupserver.app.base.BufferManager;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
-import it.sssupserver.app.executors.Executor;
+import it.sssupserver.app.filemanagers.FileManager;
 import it.sssupserver.app.users.Identity;
 
 import java.nio.channels.SocketChannel;
@@ -99,7 +99,7 @@ public class SimpleBinarySchedulableAppendCommand extends SchedulableAppendComma
         sc.close();
     }
 
-    public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
+    public static void handle(FileManager executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
         SimpleBinaryHandler.checkCategory(sc);
         var path = new Path(SimpleBinaryHelper.readString(sc));
         var length = version < 4 ? SimpleBinaryHelper.readInt(sc) : SimpleBinaryHelper.readLong(sc);

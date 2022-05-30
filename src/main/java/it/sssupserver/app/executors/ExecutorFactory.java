@@ -1,8 +1,8 @@
-package it.sssupserver.app.executors;
+package it.sssupserver.app.filemanagers;
 
 import java.nio.file.Paths;
 
-import it.sssupserver.app.executors.samples.*;
+import it.sssupserver.app.filemanagers.samples.*;
 
 public class ExecutorFactory {
     // Command line arguments starting with this prefix
@@ -50,12 +50,12 @@ public class ExecutorFactory {
         return ans;
     }
 
-    public static Executor getExecutor() throws Exception {
+    public static FileManager getExecutor() throws Exception {
         return getExecutor(null);
     }
 
     // initialize
-    public static Executor getExecutor(String[] args) throws Exception {
+    public static FileManager getExecutor(String[] args) throws Exception {
         //return new DummyStringExecutor();
         //return new DummyMapExecutor();
         //return new FlatTmpExecutor();

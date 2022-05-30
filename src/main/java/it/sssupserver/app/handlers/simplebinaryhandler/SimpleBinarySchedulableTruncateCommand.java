@@ -3,7 +3,7 @@ package it.sssupserver.app.handlers.simplebinaryhandler;
 import it.sssupserver.app.base.BufferManager;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.schedulables.*;
-import it.sssupserver.app.executors.Executor;
+import it.sssupserver.app.filemanagers.FileManager;
 import it.sssupserver.app.users.Identity;
 
 import java.nio.channels.SocketChannel;
@@ -51,7 +51,7 @@ public class SimpleBinarySchedulableTruncateCommand extends SchedulableTruncateC
         this.out.close();
     }
 
-    public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
+    public static void handle(FileManager executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
         SimpleBinaryHandler.checkCategory(sc);
         String path = SimpleBinaryHelper.readString(sc);
         long length = 0;

@@ -1,10 +1,10 @@
-package it.sssupserver.app.executors;
+package it.sssupserver.app.filemanagers;
 
 import it.sssupserver.app.commands.schedulables.*;
 import it.sssupserver.app.exceptions.ApplicationException;
 import it.sssupserver.app.exceptions.CommandNotSupportedException;
 
-public interface Executor {
+public interface FileManager {
     /**
      * Start the executor
      * in a separate thread.

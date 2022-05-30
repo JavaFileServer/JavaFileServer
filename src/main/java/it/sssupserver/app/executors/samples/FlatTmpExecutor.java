@@ -1,4 +1,4 @@
-package it.sssupserver.app.executors.samples;
+package it.sssupserver.app.filemanagers.samples;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -23,7 +23,7 @@ import it.sssupserver.app.commands.schedulables.SchedulableMoveCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableReadCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableTruncateCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableWriteCommand;
-import it.sssupserver.app.executors.SynchronousExecutor;
+import it.sssupserver.app.filemanagers.SynchronousExecutor;
 
 public class FlatTmpExecutor implements SynchronousExecutor {
     private String prefix = "JAVA-FILE-SERVER-";

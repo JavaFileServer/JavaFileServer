@@ -11,7 +11,7 @@ import it.sssupserver.app.base.BufferManager;
 import it.sssupserver.app.base.Path;
 import it.sssupserver.app.commands.*;
 import it.sssupserver.app.commands.schedulables.*;
-import it.sssupserver.app.executors.Executor;
+import it.sssupserver.app.filemanagers.FileManager;
 import it.sssupserver.app.users.Identity;
 
 public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand implements AutoCloseable {
@@ -99,7 +99,7 @@ public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand
         sc.close();
     }
 
-    public static void handle(Executor executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
+    public static void handle(FileManager executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
         SimpleBinaryHandler.checkCategory(sc);
         var path = new Path(SimpleBinaryHelper.readString(sc));
         var offset = version < 4 ? SimpleBinaryHelper.readInt(sc) : SimpleBinaryHelper.readLong(sc);
@@ -108,7 +108,7 @@ public class SimpleBinarySchedulableWriteCommand extends SchedulableWriteCommand
         reply(sc, version, marker, success);
     }
 
-    public static boolean write(Executor executor, SocketChannel sc, Identity user, Path path, long offset, long length) throws IOException, Exception {
+    public static boolean write(FileManager executor, SocketChannel sc, Identity user, Path path, long offset, long length) throws IOException, Exception {
         var read = 0L;
         var nChunks = 0;
         var res = new Result();
