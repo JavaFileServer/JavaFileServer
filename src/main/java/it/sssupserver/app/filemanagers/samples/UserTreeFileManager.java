@@ -29,7 +29,7 @@ import it.sssupserver.app.exceptions.ApplicationException;
 import it.sssupserver.app.filemanagers.FileManager;
 import it.sssupserver.app.users.Identity;
 
-public class UserTreeExecutor implements FileManager {
+public class UserTreeFileManager implements FileManager {
     private java.nio.file.Path baseDir;
     private String unknown_users = "unknown";
     // prefix identifying
@@ -154,7 +154,7 @@ public class UserTreeExecutor implements FileManager {
         }
     }
 
-    public UserTreeExecutor() throws Exception
+    public UserTreeFileManager() throws Exception
     {
         String prefix = "JAVA-UserTreeExecutor-SERVER-";
         this.baseDir = Files.createTempDirectory(prefix);
@@ -162,7 +162,7 @@ public class UserTreeExecutor implements FileManager {
         this.baseDir.toFile().deleteOnExit();
     }
 
-    public UserTreeExecutor(java.nio.file.Path dir) throws Exception
+    public UserTreeFileManager(java.nio.file.Path dir) throws Exception
     {
         if (Files.exists(dir)) {
             if (!Files.isDirectory(dir)) {

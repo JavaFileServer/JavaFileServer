@@ -19,10 +19,10 @@ import java.util.function.BiFunction;
  * This dummy executor own a single string
  * that treat as it was the content of a file 
  */
-public class DummyMapExecutor implements SynchronousFileManager {
+public class DummyMapFileManager implements SynchronousFileManager {
     private Map<String,String> content;
 
-    public DummyMapExecutor()
+    public DummyMapFileManager()
     {
         this.content = new ConcurrentHashMap<>();
     }

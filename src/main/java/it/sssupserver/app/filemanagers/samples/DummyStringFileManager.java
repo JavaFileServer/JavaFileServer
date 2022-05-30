@@ -15,14 +15,14 @@ import it.sssupserver.app.commands.schedulables.SchedulableTruncateCommand;
  * This dummy executor own a single string
  * that treat as it was the content of a file 
  */
-public class DummyStringExecutor implements SynchronousFileManager {
+public class DummyStringFileManager implements SynchronousFileManager {
     private String content;
-    public DummyStringExecutor(String data)
+    public DummyStringFileManager(String data)
     {
         this.content = data;
     }
 
-    public DummyStringExecutor()
+    public DummyStringFileManager()
     {
         this("My super special file content!");
     }

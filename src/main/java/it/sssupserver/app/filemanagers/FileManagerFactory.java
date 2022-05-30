@@ -62,6 +62,6 @@ public class FileManagerFactory {
         //return new UserTreeExecutor();
         var a = parseArgs(args);
         var datadir = Paths.get("").resolve(a.server_dir);
-        return new UserTreeExecutor(datadir);
+        return new UserTreeFileManager(datadir);
     }
 }

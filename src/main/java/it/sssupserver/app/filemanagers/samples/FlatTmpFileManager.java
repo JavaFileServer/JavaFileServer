@@ -25,13 +25,13 @@ import it.sssupserver.app.commands.schedulables.SchedulableTruncateCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableWriteCommand;
 import it.sssupserver.app.filemanagers.SynchronousFileManager;
 
-public class FlatTmpExecutor implements SynchronousFileManager {
+public class FlatTmpFileManager implements SynchronousFileManager {
     private String prefix = "JAVA-FILE-SERVER-";
     private java.nio.file.Path baseDir;
 
     static int MAX_CHUNK_SIZE = 1 << 16;
 
-    public FlatTmpExecutor() throws Exception
+    public FlatTmpFileManager() throws Exception
     {
         this.baseDir = Files.createTempDirectory(prefix);
         System.out.println("Dase directory: " + this.baseDir);
