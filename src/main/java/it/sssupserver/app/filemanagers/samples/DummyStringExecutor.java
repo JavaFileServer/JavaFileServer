@@ -3,7 +3,7 @@ package it.sssupserver.app.filemanagers.samples;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import it.sssupserver.app.filemanagers.SynchronousExecutor;
+import it.sssupserver.app.filemanagers.SynchronousFileManager;
 import it.sssupserver.app.commands.schedulables.SchedulableAppendCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableCommand;
 import it.sssupserver.app.commands.schedulables.SchedulableCreateOrReplaceCommand;
@@ -15,7 +15,7 @@ import it.sssupserver.app.commands.schedulables.SchedulableTruncateCommand;
  * This dummy executor own a single string
  * that treat as it was the content of a file 
  */
-public class DummyStringExecutor implements SynchronousExecutor {
+public class DummyStringExecutor implements SynchronousFileManager {
     private String content;
     public DummyStringExecutor(String data)
     {

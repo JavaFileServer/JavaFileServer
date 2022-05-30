@@ -2,7 +2,7 @@ package it.sssupserver.app.filemanagers;
 
 import it.sssupserver.app.commands.schedulables.SchedulableCommand;
 
-public interface SynchronousExecutor extends FileManager {
+public interface SynchronousFileManager extends FileManager {
     /**
      * Execute a single command.
      * Blocking.
