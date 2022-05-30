@@ -14,7 +14,7 @@ public class App
         System.err.println("Usage:");
         BufferManager.Help("\t");
         System.out.println();
-        ExecutorFactory.Help("\t");
+        FileManagerFactory.Help("\t");
         System.out.println();
         RequestHandlerFactory.Help("\t");
         System.out.println();
@@ -27,7 +27,7 @@ public class App
             Help();
         }
         BufferManager.parseArgs(args);
-        var executor = ExecutorFactory.getExecutor(args);
+        var executor = FileManagerFactory.getExecutor(args);
         var handler = RequestHandlerFactory.getRequestHandler(executor, args);
         var controller = ControllerFactory.getController();
         executor.start();

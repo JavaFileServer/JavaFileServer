@@ -4,7 +4,7 @@ import java.nio.file.Paths;
 
 import it.sssupserver.app.filemanagers.samples.*;
 
-public class ExecutorFactory {
+public class FileManagerFactory {
     // Command line arguments starting with this prefix
     // are intended as directed to an executor
     private static final String argsPrefix = "--X";
