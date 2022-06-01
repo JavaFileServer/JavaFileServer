@@ -7,6 +7,7 @@ import it.sssupserver.app.controllers.samples.*;
  */
 public class ControllerFactory {
     public static Controller getController() {
-        return new TimedController();
+        //return new TimedController();
+        return new StoppableController();
     }
 }
