@@ -9,6 +9,7 @@
   <version>1.0-SNAPSHOT</version>
 
   <name>client</name>
+  <description>A client for the Java File Server using the Simple Binary Protocol.</description>
   <!-- FIXME change it to the project's website -->
   <url>http://www.example.com</url>
 
