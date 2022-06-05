@@ -23,17 +23,30 @@ public class App
 
     public static void main( String[] args ) throws Exception
     {
-        if (args.length > 0 && args[0].equals("--help")) {
-            Help();
+        try {            
+            if (args.length > 0 && args[0].equals("--help")) {
+                Help();
+            }
+            BufferManager.parseArgs(args);
+            var executor = FileManagerFactory.getExecutor(args);
+            var handler = RequestHandlerFactory.getRequestHandler(executor, args);
+            var controller = ControllerFactory.getController();
+            executor.start();
+            handler.start();
+            controller.run(executor, handler);
+            handler.stop();
+            executor.stop();
+        } catch (Exception e) {
+            System.err.println("SERVER CRASHED!");
+            System.err.println("  message: " + e.getMessage());
+            System.err.println("  cause:   " + e.getCause());
+            String stackTrace = ""; int i=0;
+            for (var st : e.getStackTrace()) {
+                stackTrace += "    " + ++i + ") " + st.toString() + "\n";
+            }
+            System.err.println("  Stacktrace |>");
+            System.err.println(stackTrace);
+            System.exit(1);
         }
-        BufferManager.parseArgs(args);
-        var executor = FileManagerFactory.getExecutor(args);
-        var handler = RequestHandlerFactory.getRequestHandler(executor, args);
-        var controller = ControllerFactory.getController();
-        executor.start();
-        handler.start();
-        controller.run(executor, handler);
-        handler.stop();
-        executor.stop();
     }
 }
