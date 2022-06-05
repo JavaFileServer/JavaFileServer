@@ -15,24 +15,35 @@ import java.io.*;
 public class SimpleBinaryHandler implements RequestHandler {
 
     private int port;
+    private String ip;
     private FileManager executor;
 
     private static int DEFAULT_PORT = 5050;
+    private static String DEFAULT_IP = "0.0.0.0";
+
+    private InetSocketAddress listening_address;
+    private ServerSocketChannel inputServerSocketChannel;
 
     public SimpleBinaryHandler(FileManager executor) throws Exception
     {
-        this(executor, DEFAULT_PORT);
+        this(executor, DEFAULT_PORT, DEFAULT_IP);
     }
 
     public SimpleBinaryHandler(FileManager executor, int port) throws Exception
+    {
+        this(executor, port, DEFAULT_IP);
+    }
+
+    public SimpleBinaryHandler(FileManager executor, int port, String ip) throws Exception
     {
         if (!(port < (1<<16)))
         {
             throw new Exception("Invalid port number: " + port);
         }
         this.port = port != 0 ? port : DEFAULT_PORT;
+        this.ip = ip != null ? ip : DEFAULT_IP;
+        this.listening_address = new InetSocketAddress(this.ip, this.port);
         this.executor = executor;
-        System.out.println("Listener will accept connections on port " + this.port);
     }
 
     class Listener extends Thread {
@@ -40,9 +51,8 @@ public class SimpleBinaryHandler implements RequestHandler {
         @Override
         public void run()
         {
-            try (var ss = ServerSocketChannel.open())
-            {
-                ss.bind(new InetSocketAddress(SimpleBinaryHandler.this.port));
+            try {
+                var ss = SimpleBinaryHandler.this.inputServerSocketChannel;
                 while (true)
                 {
                     // See doc
@@ -150,6 +160,13 @@ public class SimpleBinaryHandler implements RequestHandler {
     private Listener worker;
     @Override
     public void start() throws Exception {
+        if (worker != null)
+        {
+            throw new Exception("Cannot start twice, listener already working");
+        }
+        this.inputServerSocketChannel = ServerSocketChannel.open();
+        this.inputServerSocketChannel.bind(this.listening_address);
+        System.out.println("Listener will accept connections on address " + this.listening_address);
         var listener = new Listener();
         listener.start();
         this.worker = listener;
@@ -168,6 +185,7 @@ public class SimpleBinaryHandler implements RequestHandler {
         System.out.println("Waiting for join...");
         worker.join();
         System.out.println("Worker terminated!");
+        this.inputServerSocketChannel.close();
     }
 
     public static byte[] readBytes(DataInputStream din) throws Exception
