@@ -38,6 +38,7 @@ public class App
             executor.stop();
         } catch (Exception e) {
             System.err.println("SERVER CRASHED!");
+            System.err.println("  " + e);
             System.err.println("  message: " + e.getMessage());
             System.err.println("  cause:   " + e.getCause());
             String stackTrace = ""; int i=0;
