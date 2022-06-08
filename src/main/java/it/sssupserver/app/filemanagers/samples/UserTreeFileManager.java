@@ -642,19 +642,22 @@ public class UserTreeFileManager implements FileManager {
     private static void closeAllFileChannels(UserFS userFS) {
         if (userFS != null) {
             try (var lock = userFS.writeLock()) {
-                userFS.filemap.replaceAll((path, file) -> {
-                    safeClose(file);
-                    return null;
-                });
+                if (userFS.filemap != null) {
+                    userFS.filemap.forEach((path, file) -> {
+                        if (file != null) {
+                            safeClose(file);
+                        }
+                    });
+                    userFS.filemap.clear();
+                }
             }
         }
     }
 
     private void closeAllFileChannels() {
         closeAllFileChannels(defaultFS);
-        this.userFS.replaceAll((path, userFS) -> {
+        this.userFS.forEach((path, userFS) -> {
             closeAllFileChannels(userFS);
-            return null;
         });
     }
 
