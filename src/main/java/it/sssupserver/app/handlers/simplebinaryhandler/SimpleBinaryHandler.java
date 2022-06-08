@@ -9,7 +9,10 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedList;
+import java.util.List;
 import java.io.*;
+import java.lang.ref.WeakReference;
 
 
 public class SimpleBinaryHandler implements RequestHandler {
@@ -47,10 +50,18 @@ public class SimpleBinaryHandler implements RequestHandler {
     }
 
     class Listener extends Thread {
+        // every time the number of threads handling
+        // client get greater than this limit the
+        // listener will try to remove terminated
+        // clients
+        static final int WARNING_THRESHOLD = 1000;
 
         @Override
         public void run()
         {
+            // list of thread handling clients, to be used to gently
+            // terminating clients in order
+            List<WeakReference<Thread>> client_hanlders = new LinkedList<>();
             try {
                 var ss = SimpleBinaryHandler.this.inputServerSocketChannel;
                 while (true)
@@ -61,13 +72,49 @@ public class SimpleBinaryHandler implements RequestHandler {
                     var schannel = ss.accept();
 
                     // Naive but working approach
-                    new Thread(() -> handleClient(schannel)).start();
+                    var ch = new Thread(() -> handleClient(schannel));
+                    ch.start();
+                    client_hanlders.add(new WeakReference<>(ch));
+                    if (client_hanlders.size() > WARNING_THRESHOLD) {
+                        for (var it = client_hanlders.listIterator(); it.hasNext();) {
+                            var ref = it.next();
+                            var t = ref.get();
+                            if (t == null) {
+                                // remove reference
+                                it.remove();
+                            }
+                        }
+                    }
                 }
             } catch (ClosedByInterruptException e) {
                 System.err.println("Listener interrupted!");
             } catch (Exception e) {
                 System.err.println("Listener failed to initialize " + e);
             }
+            // double pass
+            // first: try to interrupt clients
+            for (var it = client_hanlders.listIterator(); it.hasNext();) {
+                var ref = it.next();
+                var t = ref.get();
+                if (t == null) {
+                    // remove reference
+                    it.remove();
+                }
+                // try to interrupt thread handling client
+                t.interrupt();
+            }
+            // second: try to join interrupted clients
+            for (var it = client_hanlders.listIterator(); it.hasNext();) {
+                var ref = it.next();
+                var t = ref.get();
+                if (t == null) {
+                    // remove reference
+                    it.remove();
+                }
+                // try to join thread handling client
+                try { t.join(); } catch(Exception e) {}
+            }
+            // al clients threads have been joined!
         }
 
         private void handleClient(SocketChannel schannel) {
