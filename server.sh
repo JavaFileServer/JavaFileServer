@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 JAR="JavaFileServer-1.0-SNAPSHOT.jar"
 JDIR=target/

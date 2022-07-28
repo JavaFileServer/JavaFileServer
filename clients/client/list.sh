@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 CLIENT=client.sh
 DIR=$(dirname $0)/$CLIENT
