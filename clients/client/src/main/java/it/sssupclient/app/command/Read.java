@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Random;
 
 import it.sssupclient.app.BufferManager;
@@ -92,7 +93,7 @@ public class Read extends Command {
     }
 
     @Override
-    public boolean parseResponseBody(SocketChannel sc) throws Exception {
+    public boolean parseResponseBody(SocketChannel sc, ArrayList<String>  response) throws Exception {
         var status = Helpers.readShort(sc);
         switch (status) {
         case 0:

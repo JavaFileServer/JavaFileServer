@@ -45,9 +45,8 @@ public class App
             return sc;
         } catch (Exception e) {
             System.err.println("Cannot connect to " + address + ": " + e);
-            System.exit(1);
+            return null;
         }
-        return null; // never reached
     }
 
     /**
@@ -56,7 +55,7 @@ public class App
     static String[] getArgs(String[] args, int skip) {
         if (args.length < skip) {
             System.err.println("Missing arguments");
-            System.exit(1);
+            return null;
         }
         var ans = new String[args.length - skip];
         for (int i=0; i != ans.length; ++i) {
@@ -66,21 +65,6 @@ public class App
     }
     
     static Map<String, Command> commands = new TreeMap<>(); 
-
-    static void handleCommand(Command command, int version, String username, String[] args) throws Exception {
-        try {
-            command.parse(version, username, args);
-        } catch (Exception e) {
-            System.err.println("Error occurred while parsing command " + command.getName() + " " + e);
-            command.printHelp("\t");
-            System.exit(1);
-        }
-        var sc = connect();
-        var scheduler = new Scheduler(sc);
-        command.exec(sc, scheduler);
-        var success = scheduler.parse();
-        System.exit(success ? 0 : 1);
-    }
 
     static void addCommmands() {
         var cmds = new Command[] {
@@ -107,7 +91,7 @@ public class App
     }
 
     // Display help for specified command or for all them
-    static void help(String cmd) {
+    static boolean help(String cmd) {
         if (cmd == null) {
             help();
         } else {
@@ -125,10 +109,10 @@ public class App
                 command.printHelp("\t");
             }
         }
-        System.exit(0);
+        return true;
     }
 
-    static void help(int exit_status) {
+    static boolean help(int exit_status) {
         System.err.println("Usage:");
         System.err.println("\tcommand [args]");
         genericHelp();
@@ -136,7 +120,7 @@ public class App
         for (var cmd : commands.entrySet()) {
             cmd.getValue().printHelp("\t\t");
         }
-        System.exit(exit_status);
+        return exit_status == 0 ? true : false;
     }
 
     private static void genericHelp() {
@@ -147,22 +131,39 @@ public class App
         System.err.println();
     }
 
-    static void handle(String[] params) throws Exception {
+    static boolean handle(String[] params, ArrayList<String> response) throws Exception {
         if (params.length == 0){
-            help();
+            System.err.println("No command passed");
+            help(1);
+            return false;
         }
         var cmd = params[0];
         var args = getArgs(params, 1);
+        if (args == null) return false;
         var command = commands.get(cmd);
         if (command == null) {
             System.err.println("Unknow command: '" + cmd + "'");
-            help(1);
+            return help(1);
         } else {
-            handleCommand(command, protocol_version, username, args);
+            return handleCommand(command, protocol_version, username, args, response);
         }
     }
-
-
+    static boolean handleCommand(Command command, int version, String username, String[] args, ArrayList<String>  response) throws Exception {
+        try {
+            command.parse(version, username, args);
+        } catch (Exception e) {
+            System.err.println("Error occurred while parsing command " + command.getName() + " " + e);
+            command.printHelp("\t");
+            return false;
+        }
+        var sc = connect();
+        if (sc == null) return false;
+        var scheduler = new Scheduler(sc);
+        command.exec(sc, scheduler);
+        var success = scheduler.parse(response);
+        System.out.println("Command handled with success: " + String.valueOf(success));
+        return success ? true : false;
+    }
 
     static String[] extract_globals(String[] args) {
         var ans = new ArrayList<String>();
@@ -208,17 +209,19 @@ public class App
         return ans.stream().toArray(String[] ::new);
     }
 
-    public static void execute(String[] args) throws Exception
+    public static boolean execute(String[] args, ArrayList<String> response) throws Exception
     {
         addCommmands();
         args = extract_globals(args);
-        handle(args);
+        return handle(args, response);
     }
-    // public static void main( String[] args ) throws Exception
-    // {
-    //     addCommmands();
-    //     args = extract_globals(args);
-    //     //addHandlers();
-    //     handle(args);
-    // }
+    
+    public static void main( String[] args ) throws Exception
+    {
+        
+        Interface gui = new Interface(username, host, port);
+        gui.show();
+        
+        // execute(args);
+    }
 }

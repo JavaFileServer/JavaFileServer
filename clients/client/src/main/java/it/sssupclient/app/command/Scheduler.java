@@ -1,6 +1,7 @@
 package it.sssupclient.app.command;
 
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,7 +37,7 @@ public class Scheduler {
         });
     }
 
-    public boolean parse() throws Exception {
+    public boolean parse(ArrayList<String> response) throws Exception {
         boolean done;
         Command handler;
         do {
@@ -48,7 +49,7 @@ public class Scheduler {
                 Helpers.panic("Bad category, found: " + category);
             }
             handler = map.get(version).get(marker).get(type);
-            done = handler.parseResponseBody(sc);
+            done = handler.parseResponseBody(sc, response);
         } while (!done);
         return handler.successful();
     }

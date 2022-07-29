@@ -55,7 +55,7 @@
           <configuration>
             <archive>
               <manifest>
-                <mainClass>it.sssupclient.app.Interface</mainClass>
+                <mainClass>it.sssupclient.app.App</mainClass>
               </manifest>
             </archive>
           </configuration>

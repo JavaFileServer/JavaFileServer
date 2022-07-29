@@ -2,6 +2,7 @@ package it.sssupclient.app.command;
 
 import java.nio.channels.SocketChannel;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -45,7 +46,7 @@ public class List extends Command {
     }
 
     @Override
-    public boolean parseResponseBody(SocketChannel sc) {
+    public boolean parseResponseBody(SocketChannel sc, ArrayList<String> response) {
         var status = Helpers.readShort(sc);
         String[] ans = null;
         switch (status) {
@@ -60,7 +61,8 @@ public class List extends Command {
                 Arrays.sort(ans);
                 System.out.println("Found " + ans.length + " files:");
                 for (int i=0; i!=ans.length; ++i) {
-                    System.out.println(i + ") " + ans[i]);
+                    // System.out.println(i + ") " + ans[i]);
+                    response.add(ans[i]);
                 }
             }
             this.success = true;
@@ -102,6 +104,7 @@ public class List extends Command {
 
     @Override
     public void exec(SocketChannel sc, Scheduler scheduler) {
+        System.out.println("listpath " + path);
         this.sendMsg(sc);
         scheduler.schedule(new Waiter(this.version, getType(), this, this.getMarker()));
     }

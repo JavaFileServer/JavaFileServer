@@ -87,6 +87,7 @@ public class SimpleBinarySchedulableListCommand extends SchedulableListCommand {
     public static void handle(FileManager executor, SocketChannel sc, int version, Identity user, int marker) throws Exception {
         SimpleBinaryHandler.checkCategory(sc);
         var path = SimpleBinaryHelper.readString(sc);
+        System.out.println(path);
         var cmd = new ListCommand(new Path(path));
         var schedulable = new SimpleBinarySchedulableListCommand(cmd, sc, version, marker);
         schedulable.setUser(user);

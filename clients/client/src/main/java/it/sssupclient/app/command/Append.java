@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Random;
 
 import it.sssupclient.app.BufferManager;
@@ -59,13 +60,14 @@ public class Append extends Command {
     }
 
     @Override
-    public boolean parseResponseBody(SocketChannel sc) throws Exception {
+    public boolean parseResponseBody(SocketChannel sc, ArrayList<String>  response) throws Exception {
         var status = Helpers.readByte(sc);
         switch (status) {
         case 0:
         case 1:
             Helpers.checkPadding(sc, 3);
             System.out.println("Success:" + (this.success = status == 1));
+            response.add(String.valueOf(this.success));
             break;
         default:
             Helpers.panic("Invalid status: " + status);

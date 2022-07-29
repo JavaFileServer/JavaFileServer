@@ -1,6 +1,7 @@
 package it.sssupclient.app.command;
 
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 
 /**
  * Class representing a command provided by the user
@@ -13,7 +14,7 @@ public abstract class Command {
      * Return true if this handler has completely received
      * the required response. 
      */
-    public abstract boolean parseResponseBody(SocketChannel sc) throws Exception;
+    public abstract boolean parseResponseBody(SocketChannel sc, ArrayList<String> response) throws Exception;
     public abstract void exec(SocketChannel sc, Scheduler scheduler) throws Exception;
     public abstract short getType();
     public abstract int getMarker();

@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Random;
 
 import it.sssupclient.app.BufferManager;
@@ -57,7 +58,8 @@ public class Write extends Command {
             lpadding = "";
         }
         System.err.println(lpadding + getName() + " local_path remote_path [offset] [length]");
-        System.err.println(lpadding + "\t write length (or all) bytes from local_path to the remote file starting ar offset (or beginning). 0 length means file length. If length in grater than file size it is shrinked to file size.");
+        System.err.println(lpadding
+                + "\t write length (or all) bytes from local_path to the remote file starting ar offset (or beginning). 0 length means file length. If length in grater than file size it is shrinked to file size.");
     }
 
     @Override
@@ -66,16 +68,16 @@ public class Write extends Command {
     }
 
     @Override
-    public boolean parseResponseBody(SocketChannel sc) throws Exception {
+    public boolean parseResponseBody(SocketChannel sc, ArrayList<String> response) throws Exception {
         var status = Helpers.readByte(sc);
         switch (status) {
-        case 0:
-        case 1:
-            Helpers.checkPadding(sc, 3);
-            System.out.println("Success:" + (this.success = status == 1));
-            break;
-        default:
-            Helpers.panic("Invalid status: " + status);
+            case 0:
+            case 1:
+                Helpers.checkPadding(sc, 3);
+                System.out.println("Success:" + (this.success = status == 1));
+                break;
+            default:
+                Helpers.panic("Invalid status: " + status);
         }
         return true;
     }
@@ -92,6 +94,7 @@ public class Write extends Command {
     }
 
     public int marker;
+
     private void sendMsg(SocketChannel sc) throws IOException {
         try (var wrapper = BufferManager.getBuffer()) {
             var buffer = wrapper.get();
@@ -104,13 +107,13 @@ public class Write extends Command {
                 buffer.put(Helpers.serializeString(this.username));
             }
             buffer.putShort(this.getType());
-            buffer.putShort((short)0);
+            buffer.putShort((short) 0);
             buffer.put(Helpers.serializeString(this.path));
             // length
             var length = this.length == 0 ? this.fin.size() : Math.min(this.length, this.fin.size());
             if (this.version < 4) {
-                buffer.putInt((int)this.offset);
-                buffer.putInt((int)length);
+                buffer.putInt((int) this.offset);
+                buffer.putInt((int) length);
             } else {
                 buffer.putLong(this.offset);
                 buffer.putLong(length);
