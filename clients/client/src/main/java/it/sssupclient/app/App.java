@@ -148,6 +148,9 @@ public class App
     }
 
     static void handle(String[] params) throws Exception {
+        if (params.length == 0){
+            help();
+        }
         var cmd = params[0];
         var args = getArgs(params, 1);
         var command = commands.get(cmd);
@@ -205,12 +208,17 @@ public class App
         return ans.stream().toArray(String[] ::new);
     }
 
-
-    public static void main( String[] args ) throws Exception
+    public static void execute(String[] args) throws Exception
     {
         addCommmands();
         args = extract_globals(args);
-        //addHandlers();
         handle(args);
     }
+    // public static void main( String[] args ) throws Exception
+    // {
+    //     addCommmands();
+    //     args = extract_globals(args);
+    //     //addHandlers();
+    //     handle(args);
+    // }
 }
