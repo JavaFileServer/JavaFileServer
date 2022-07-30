@@ -59,7 +59,7 @@ public class List extends Command {
                     ans[i] = Helpers.readString(sc);
                 }
                 Arrays.sort(ans);
-                System.out.println("Found " + ans.length + " files:");
+                // System.out.println("Found " + ans.length + " files:");
                 for (int i=0; i!=ans.length; ++i) {
                     // System.out.println(i + ") " + ans[i]);
                     response.add(ans[i]);
@@ -104,7 +104,6 @@ public class List extends Command {
 
     @Override
     public void exec(SocketChannel sc, Scheduler scheduler) {
-        System.out.println("listpath " + path);
         this.sendMsg(sc);
         scheduler.schedule(new Waiter(this.version, getType(), this, this.getMarker()));
     }

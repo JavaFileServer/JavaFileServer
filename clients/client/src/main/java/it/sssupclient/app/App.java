@@ -26,8 +26,7 @@ import it.sssupclient.app.command.Size;
  * Hello world!
  *
  */
-public class App 
-{
+public class App {
     static int protocol_version = 4;
 
     static void panic(String error) {
@@ -38,7 +37,8 @@ public class App
     static String host = "localhost";
     static int port = 5050;
     static String username;
-    static SocketChannel connect() {
+
+    static SocketChannel connect(String host, int port) {
         var address = new InetSocketAddress(host, port);
         try {
             var sc = SocketChannel.open(address);
@@ -58,34 +58,35 @@ public class App
             return null;
         }
         var ans = new String[args.length - skip];
-        for (int i=0; i != ans.length; ++i) {
-            ans[i] = args[skip+i];
+        for (int i = 0; i != ans.length; ++i) {
+            ans[i] = args[skip + i];
         }
         return ans;
     }
-    
-    static Map<String, Command> commands = new TreeMap<>(); 
+
+    static Map<String, Command> commands = new TreeMap<>();
 
     static void addCommmands() {
         var cmds = new Command[] {
-            new Read(),
-            new List(),
-            new CreateOrReplace(),
-            new Create(),
-            new Append(),
-            new Exists(),
-            new Truncate(),
-            new Delete(),
-            new Mkdir(),
-            new Move(),
-            new Copy(),
-            new Write(),
-            new Size(),
+                new Read(),
+                new List(),
+                new CreateOrReplace(),
+                new Create(),
+                new Append(),
+                new Exists(),
+                new Truncate(),
+                new Delete(),
+                new Mkdir(),
+                new Move(),
+                new Copy(),
+                new Write(),
+                new Size(),
         };
         for (var cmd : cmds) {
             commands.put(cmd.getName(), cmd);
         }
     }
+
     static void help() {
         help(0);
     }
@@ -131,24 +132,27 @@ public class App
         System.err.println();
     }
 
-    static boolean handle(String[] params, ArrayList<String> response) throws Exception {
-        if (params.length == 0){
+    static boolean handle(String[] params, ArrayList<String> response, String username, String host, int port) throws Exception {
+        if (params.length == 0) {
             System.err.println("No command passed");
             help(1);
             return false;
         }
         var cmd = params[0];
         var args = getArgs(params, 1);
-        if (args == null) return false;
+        if (args == null)
+            return false;
         var command = commands.get(cmd);
         if (command == null) {
             System.err.println("Unknow command: '" + cmd + "'");
             return help(1);
         } else {
-            return handleCommand(command, protocol_version, username, args, response);
+            return handleCommand(command, protocol_version, username, host, port, args, response);
         }
     }
-    static boolean handleCommand(Command command, int version, String username, String[] args, ArrayList<String>  response) throws Exception {
+
+    static boolean handleCommand(Command command, int version, String username, String host, int port, String[] args,
+            ArrayList<String> response) throws Exception {
         try {
             command.parse(version, username, args);
         } catch (Exception e) {
@@ -156,12 +160,13 @@ public class App
             command.printHelp("\t");
             return false;
         }
-        var sc = connect();
-        if (sc == null) return false;
+        var sc = connect(host, port);
+        if (sc == null)
+            return false;
         var scheduler = new Scheduler(sc);
         command.exec(sc, scheduler);
         var success = scheduler.parse(response);
-        System.out.println("Command handled with success: " + String.valueOf(success));
+        // System.out.println("Command handled with success: " + String.valueOf(success));
         return success ? true : false;
     }
 
@@ -206,22 +211,21 @@ public class App
                 ans.add(a);
             }
         }
-        return ans.stream().toArray(String[] ::new);
+        return ans.stream().toArray(String[]::new);
     }
 
-    public static boolean execute(String[] args, ArrayList<String> response) throws Exception
-    {
+    public static boolean execute(String[] args, ArrayList<String> response, String username, String host, int port)
+            throws Exception {
         addCommmands();
         args = extract_globals(args);
-        return handle(args, response);
+        return handle(args, response, username, host, port);
     }
-    
-    public static void main( String[] args ) throws Exception
-    {
-        
+
+    public static void main(String[] args) throws Exception {
+
         Interface gui = new Interface(username, host, port);
-        gui.show();
-        
+        // gui.init();
+
         // execute(args);
     }
 }

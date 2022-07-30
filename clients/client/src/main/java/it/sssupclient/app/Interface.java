@@ -1,85 +1,64 @@
 package it.sssupclient.app;
 
 import javax.swing.*;
+import javax.swing.event.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 
 public class Interface {
+    // server connection parameters
     String host;
     int port;
     String username;
+    // connection status
     boolean connected = false;
-    String defalutUser = "unknown";
-    String path;
-    JPanel top;
-    JPanel bottom;
-    JPanel body;
-    ArrayList<String> dirs = new ArrayList<String>();
-    ArrayList<String> files = new ArrayList<String>();
+    // current data
+    String path = "";
+    ArrayList<String> list = new ArrayList<String>();
+    // graphic components
+    JFrame frame;
+    JButton connectionButton;
+    JLabel connectionStatusLabel;
+    InterfaceBody body;
+    JTextField usernameField;
+    JTextField hostField;
+    JTextField portField;
+    // ListModel<String> contentsList;
+
+    static String defalutUser = "unknown";
+    static String disconnectedStatus = "Connect to server to start browsing files...";
 
     public Interface(String username, String host, int port) throws Exception {
         this.username = username;
         this.host = host;
         this.port = port;
-        this.path = "/";
-        updateList();
+        // init frame
+        createWindow();
     }
 
-    public void updateList() throws Exception {
-        String[] initArgs = { "list", path};
-        ArrayList<String> list = new ArrayList<String>();
-        connected = App.execute(initArgs, list);
-        for (String elem : list) {
-            if (elem.endsWith("/")) {
-                dirs.add(elem);
-            } else {
-                files.add(elem);
-            }
-        }
-    }
-
-    public String connectionStatus() {
-        return connected ? "Connected to " + host + "/" + String.valueOf(port)
-                : "Connect to server to start browsing...";
-    }
-
-    public JFrame createWindow() {
-        JFrame frame = new JFrame("Java File Server");
+    public void createWindow() {
+        frame = new JFrame("Java File Server");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1000, 600);
-        return frame;
+
+        frame.getContentPane().add(BorderLayout.SOUTH, createBottomRow());
+        frame.getContentPane().add(BorderLayout.NORTH, createTopRow());
+        body = new InterfaceBody();
+        frame.getContentPane().add(BorderLayout.CENTER, body);
+        frame.setVisible(true);
     }
 
     public JPanel createBottomRow() {
         var bottomRow = new JPanel();
         var usernameLabel = new JLabel("username:");
-        var usernameField = new JTextField(username, 10);
+        usernameField = new JTextField(username, 10);
         var hostLabel = new JLabel("host:");
-        var hostField = new JTextField(host, 15);
+        hostField = new JTextField(host, 15);
         var portLabel = new JLabel("port");
-        var portField = new JTextField(String.valueOf(port), 5);
-        var connectionButton = new JButton(connected ? "disconnect" : "connect");
-        connectionButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // if connected disconnect
-                if (connected) {
-                    connected = false;
-                    connectionButton.setText("connect");
-
-                } else {
-                    connected = true;
-                    connectionButton.setText("disconnect");
-                    try {
-                        updateList();
-                    } catch (Exception e1) {
-                        // TODO Auto-generated catch block
-                        e1.printStackTrace();
-                    }
-                }
-            }
-        });
+        portField = new JTextField(String.valueOf(port), 5);
+        connectionButton = new JButton("connect");
+        connectionButton.addActionListener(new ConnectionTapListener());
 
         bottomRow.add(usernameLabel);
         bottomRow.add(usernameField);
@@ -94,89 +73,253 @@ public class Interface {
 
     public JPanel createTopRow() {
         var topRow = new JPanel();
-        var connectionStatusLabel = new JLabel(connectionStatus());
+        connectionStatusLabel = new JLabel(disconnectedStatus);
         topRow.add(connectionStatusLabel);
         return topRow;
     }
 
-    class DirTapListener implements ActionListener {
-        String name;
+    public void updateConnection(boolean newConnected, boolean failed) {
+        connected = newConnected;
+        connectionButton.setText(connected ? "disconnect" : "connect");
+        connectionStatusLabel.setText(
+                connected ? "Connected to " + host + "/" + String.valueOf(port) + "/" + path
+                        : failed ? "Connection failed " : disconnectedStatus);
+    }
 
-        public DirTapListener(String name) {
-            this.name = name;
-        }
-
+    class ConnectionTapListener implements ActionListener {
         @Override
-        public void actionPerformed(ActionEvent e) {
-            path = path + name;
-            try {
-                updateList();
-
-            } catch (Exception e1) {
-                // TODO Auto-generated catch block
-                e1.printStackTrace();
+        public void actionPerformed(ActionEvent ae) {
+            // attempt connection
+            if (!connected) {
+                String[] initArgs = { "list" };
+                boolean success;
+                username = usernameField.getText();
+                host = hostField.getText();
+                port = Integer.valueOf(portField.getText());
+                try {
+                    success = App.execute(initArgs, list, username, host, port);
+                } catch (Exception e) {
+                    connectionStatusLabel.setText("Connection failed");
+                    return;
+                }
+                if (!success) {
+                    connectionStatusLabel.setText("Connection failed");
+                    return;
+                }
+                updateConnection(success, false);
+                frame.getContentPane().remove(body);
+                body = new InterfaceBody(list);
+                frame.getContentPane().add(body);
+                frame.revalidate();
+            }
+            // disconnect
+            else {
+                connectionInterrupted();
             }
         };
     }
 
-    class ParentDirTapListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            // TODO change path and update list
-        };
+    public boolean rootFolder() {
+        return path == "";
     }
 
-    class FileTapListener implements ActionListener {
-        String name;
+    class InterfaceBody extends JPanel {
+        private JSplitPane bodySplit;
+        private JScrollPane contentsScrollPane;
+        private JPanel detailPane = null;
+        private JScrollPane detailScrollPane;
+        private JList<String> jlist = null;
+        private int firstFile;
 
-        public FileTapListener(String name) {
-            this.name = name;
+        public InterfaceBody() {
+            updateView();
         }
 
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            // TODO select file show buttons
-        };
+        public InterfaceBody(ArrayList<String> list) {
+            // contents
+            String fileList[] = getFileList();
+            updateJlist(fileList);
+            updateView();
+        }
+
+        public String[] getFileList() {
+            // file list
+            int fileListLength = list.size() + (rootFolder() ? 0 : 1);
+            String fileList[] = new String[fileListLength];
+            int i = 0;
+
+            // parent dir
+            if (!rootFolder()) {
+                fileList[i] = "..";
+                i++;
+            }
+            // directories
+            for (int l = 0; l < list.size(); l++) {
+                if (list.get(l).endsWith("/")) {
+                    fileList[i] = list.get(l);
+                    i++;
+                }
+            }
+            firstFile = i;
+            // files
+            for (int l = 0; l < list.size(); l++) {
+                if (!list.get(l).endsWith("/")) {
+                    fileList[i] = list.get(l);
+                    i++;
+                }
+            }
+            return fileList;
+        }
+
+        // after update on detailPane or jlist
+        public void updateView() {
+            removeAll();
+
+            // contents
+            contentsScrollPane = (jlist == null) ? new JScrollPane() : new JScrollPane(jlist);
+            contentsScrollPane.setPreferredSize(new Dimension(600, 450));
+
+            // selected file details
+            detailScrollPane = (detailPane == null) ? new JScrollPane() : new JScrollPane(detailPane);
+            detailScrollPane.setPreferredSize(new Dimension(300, 450));
+
+            bodySplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, contentsScrollPane, detailScrollPane);
+            bodySplit.setSize(1000, 450);
+            add(bodySplit);
+            revalidate();
+        }
+
+        public void updateJlist(String[] fileList) {
+            jlist = new JList<String>(fileList);
+            jlist.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            jlist.setLayoutOrientation(JList.VERTICAL);
+            jlist.setVisibleRowCount(-1);
+            jlist.addListSelectionListener(new MySelectionListener());
+        }
+
+        class MySelectionListener implements ListSelectionListener {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                detailPane = new JPanel();
+                detailPane.setLayout(new BoxLayout(detailPane, BoxLayout.Y_AXIS));
+                var nameLabel = new JLabel(jlist.getSelectedValue());
+                detailPane.add(nameLabel);
+
+                if (jlist.getSelectedIndex() < firstFile) {
+                    attemptCommand(new String[] { "list", jlist.getSelectedValue() });
+                    var elementsLabel = new JLabel("elements: " + String.valueOf(list.size()));
+                    detailPane.add(elementsLabel);
+                    var navigateButton = new JButton("Navigate");
+                    navigateButton.addActionListener(new DirTapListener(jlist.getSelectedValue()));
+                    detailPane.add(navigateButton);
+                } else {
+                    attemptCommand(new String[] { "size", jlist.getSelectedValue() });
+                    var sizeLabel = new JLabel("size: " + list.get(0));
+                    detailPane.add(sizeLabel);
+                    String actions[] = {
+                            "copy",
+                            "cut",
+                            "download",
+                            "replace",
+                            "append",
+                            "delete"
+                    };
+                    for (String action : actions) {
+                        var tmpButton = new JButton(action);
+                        tmpButton.addActionListener(new ActionTapListener(jlist.getSelectedValue(), action));
+                        detailPane.add(tmpButton);
+                    }
+                }
+                updateView();
+            }
+        }
+
+        class DirTapListener implements ActionListener {
+            String name;
+
+            public DirTapListener(String name) {
+                this.name = name;
+            }
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (name == "..") {
+                    var p = path.split("/");
+                    path = "";
+                    for (var i = 0; i < p.length - 1; i++) {
+                        path += p[i] + "/";
+                    }
+                } else {
+                    path = path + name;
+                }
+                attemptCommand(new String[] { "list", path });
+                String fileList[] = getFileList();
+                updateJlist(fileList);
+                detailPane = null;
+                updateView();
+            };
+        }
+
+        class ParentDirTapListener implements ActionListener {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // TODO change path and update list
+            };
+        }
+
+        class FileTapListener implements ActionListener {
+            String name;
+
+            public FileTapListener(String name) {
+                this.name = name;
+            }
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // TODO select file show buttons
+            };
+        }
+
+        class ActionTapListener implements ActionListener {
+            String name;
+            String action;
+
+            public ActionTapListener(String name, String action) {
+                this.name = name;
+                this.action = action;
+            }
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // TODO select file show buttons
+            };
+        }
     }
 
-    public JPanel fillBodyList() {
-        listModel.clear();
-        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
-        if (path != "/") {
-            var parentButton = new JButton("..");
-            parentButton.addActionListener(new ParentDirTapListener());
-            body.add(parentButton);
+    public boolean attemptCommand(String[] args) {
+        list.clear();
+        boolean success;
+        try {
+            success = App.execute(args, list, username, host, port);
+        } catch (Exception e) {
+            connectionInterrupted();
+            return false;
         }
-        for (String dir : dirs) {
-            var tmpButton = new JButton(dir);
-            tmpButton.addActionListener(new DirTapListener(dir));
-            body.add(tmpButton);
+        if (!success) {
+            connectionInterrupted();
+            return false;
         }
-        for (String file : files) {
-            var tmpButton = new JButton(file);
-            tmpButton.addActionListener(new FileTapListener(file));
-            body.add(tmpButton);
-        }
-        return body;
+        return success;
     }
 
-    public void show() throws Exception {
-        // Window
-        JFrame frame = createWindow();
-
-        // Connection Fields
-        bottom = createBottomRow();
-        frame.getContentPane().add(BorderLayout.SOUTH, bottom);
-
-        // Connection Status
-        top = createTopRow();
-        frame.getContentPane().add(BorderLayout.NORTH, top);
-
-        // body
-        body = new JPanel();
-        fillBodyList();
-        frame.getContentPane().add(BorderLayout.CENTER, body);
-
-        frame.setVisible(true);
+    public void connectionInterrupted() {
+        updateConnection(false, true);
+        list.clear();
+        path = "";
+        frame.getContentPane().remove(body);
+        body = new InterfaceBody();
+        frame.getContentPane().add(body);
+        frame.revalidate();
     }
+
 }

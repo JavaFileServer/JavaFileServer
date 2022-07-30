@@ -51,7 +51,8 @@ public class Size extends Command {
             } else {
                 size = Helpers.readLong(sc);
             }
-            System.out.println(this.path + ": " + size);
+            // System.out.println(this.path + ": " + size);
+            response.add(String.valueOf(size));
             this.success = true;
             break;
         case 1:
