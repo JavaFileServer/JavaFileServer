@@ -1,7 +1,10 @@
 package it.sssupclient.app;
 
+import javax.print.attribute.standard.Copies;
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.swing.plaf.FileChooserUI;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
@@ -91,6 +94,7 @@ public class Interface {
         public void actionPerformed(ActionEvent ae) {
             // attempt connection
             if (!connected) {
+                list.clear();
                 String[] initArgs = { "list" };
                 boolean success;
                 username = usernameField.getText();
@@ -124,12 +128,19 @@ public class Interface {
     }
 
     class InterfaceBody extends JPanel {
+        // graphic
         private JSplitPane bodySplit;
         private JScrollPane contentsScrollPane;
         private JPanel detailPane = null;
         private JScrollPane detailScrollPane;
         private JList<String> jlist = null;
+        private JButton newFolderButton;
+        private JButton uploadFileButton;
+        private JButton pasteButton;
+        // data
         private int firstFile;
+        String selectedMoveFile;
+        boolean copying;
 
         public InterfaceBody() {
             updateView();
@@ -186,6 +197,24 @@ public class Interface {
             bodySplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, contentsScrollPane, detailScrollPane);
             bodySplit.setSize(1000, 450);
             add(bodySplit);
+
+            if (jlist != null) {
+
+                newFolderButton = new JButton("New folder");
+                newFolderButton.addActionListener(new ActionTapListener(path, "mkdir"));
+                add(newFolderButton);
+
+                uploadFileButton = new JButton("Upload file");
+                uploadFileButton.addActionListener(new ActionTapListener(path, "upload"));
+                add(uploadFileButton);
+
+                if (selectedMoveFile != null) {
+                    pasteButton = new JButton(copying ? "Copy here" : "Move here");
+                    pasteButton.addActionListener(new ActionTapListener("", "paste"));
+                    add(pasteButton);
+                }
+            }
+
             revalidate();
         }
 
@@ -202,56 +231,55 @@ public class Interface {
             public void valueChanged(ListSelectionEvent e) {
                 detailPane = new JPanel();
                 detailPane.setLayout(new BoxLayout(detailPane, BoxLayout.Y_AXIS));
-                var nameLabel = new JLabel(jlist.getSelectedValue());
-                detailPane.add(nameLabel);
-
-                if (jlist.getSelectedIndex() < firstFile) {
-                    attemptCommand(new String[] { "list", jlist.getSelectedValue() });
-                    var elementsLabel = new JLabel("elements: " + String.valueOf(list.size()));
-                    detailPane.add(elementsLabel);
+                if (jlist.getSelectedValue() == "..") {
+                    var parentLabel = new JLabel("parent directory");
+                    detailPane.add(parentLabel);
                     var navigateButton = new JButton("Navigate");
-                    navigateButton.addActionListener(new DirTapListener(jlist.getSelectedValue()));
+                    navigateButton.addActionListener(new ParentNavigateTapListener());
                     detailPane.add(navigateButton);
                 } else {
-                    attemptCommand(new String[] { "size", jlist.getSelectedValue() });
-                    var sizeLabel = new JLabel("size: " + list.get(0));
-                    detailPane.add(sizeLabel);
-                    String actions[] = {
-                            "copy",
-                            "cut",
-                            "download",
-                            "replace",
-                            "append",
-                            "delete"
-                    };
-                    for (String action : actions) {
-                        var tmpButton = new JButton(action);
-                        tmpButton.addActionListener(new ActionTapListener(jlist.getSelectedValue(), action));
-                        detailPane.add(tmpButton);
+                    var nameLabel = new JLabel(jlist.getSelectedValue());
+                    detailPane.add(nameLabel);
+                    if (jlist.getSelectedIndex() < firstFile) {
+                        attemptCommand(new String[] { "list", jlist.getSelectedValue() });
+                        var elementsLabel = new JLabel("elements: " + String.valueOf(list.size()));
+                        detailPane.add(elementsLabel);
+                        var navigateButton = new JButton("Navigate");
+                        navigateButton.addActionListener(new NavigateTapListener(jlist.getSelectedValue()));
+                        detailPane.add(navigateButton);
+                    } else {
+                        attemptCommand(new String[] { "size", jlist.getSelectedValue() });
+                        var sizeLabel = new JLabel("size: " + list.get(0));
+                        detailPane.add(sizeLabel);
+                        String actions[] = {
+                                "download",
+                                "move",
+                                "copy",
+                                "replace",
+                                "append",
+                                "delete"
+                        };
+                        for (String action : actions) {
+                            var tmpButton = new JButton(action);
+                            tmpButton.addActionListener(new ActionTapListener(jlist.getSelectedValue(), action));
+                            detailPane.add(tmpButton);
+                        }
                     }
                 }
                 updateView();
             }
         }
 
-        class DirTapListener implements ActionListener {
+        class NavigateTapListener implements ActionListener {
             String name;
 
-            public DirTapListener(String name) {
+            public NavigateTapListener(String name) {
                 this.name = name;
             }
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (name == "..") {
-                    var p = path.split("/");
-                    path = "";
-                    for (var i = 0; i < p.length - 1; i++) {
-                        path += p[i] + "/";
-                    }
-                } else {
-                    path = path + name;
-                }
+                path = name;
                 attemptCommand(new String[] { "list", path });
                 String fileList[] = getFileList();
                 updateJlist(fileList);
@@ -260,23 +288,19 @@ public class Interface {
             };
         }
 
-        class ParentDirTapListener implements ActionListener {
+        class ParentNavigateTapListener implements ActionListener {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // TODO change path and update list
-            };
-        }
-
-        class FileTapListener implements ActionListener {
-            String name;
-
-            public FileTapListener(String name) {
-                this.name = name;
-            }
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // TODO select file show buttons
+                var p = path.split("/");
+                path = "";
+                for (var i = 0; i < p.length - 1; i++) {
+                    path += p[i] + "/";
+                }
+                attemptCommand(new String[] { "list", path });
+                String fileList[] = getFileList();
+                updateJlist(fileList);
+                detailPane = null;
+                updateView();
             };
         }
 
@@ -291,12 +315,69 @@ public class Interface {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                // TODO select file show buttons
+                var tmp = "";
+                switch (action) {
+                    case "copy":
+                        selectedMoveFile = name;
+                        copying = true;
+                        break;
+                    case "move":
+                        selectedMoveFile = name;
+                        copying = false;
+                        break;
+                    case "download":
+                        tmp = inputNameDialog("Save file as:", "downloaded.txt");
+                        attemptCommand(new String[] { "read", tmp, "local-file/" + name });
+                        break;
+                    case "replace":
+                        tmp = selectLocalFileDialog();
+                        attemptCommand(new String[] { "write", tmp, name });
+                        break;
+                    case "append":
+                        tmp = selectLocalFileDialog();
+                        attemptCommand(new String[] { "append", tmp, name });
+                        break;
+                    case "delete":
+                        attemptCommand(new String[] { "delete", name });
+                        break;
+                    case "mkdir":
+                        tmp = inputNameDialog("New folder name:", "folder");
+                        attemptCommand(new String[] { "mkdir", path + tmp });
+                        break;
+                    case "upload":
+                        tmp = selectLocalFileDialog();
+                        var newFile = inputNameDialog("New file name:", "uploaded.txt");
+                        attemptCommand(new String[] { "create", tmp, name + newFile });
+                        break;
+                    case "paste":
+                        if (copying) {
+                            tmp = inputNameDialog("Copy name:", "copy.txt");
+                            attemptCommand(new String[] { "copy", selectedMoveFile, path + tmp });
+                        } else {
+                            tmp = inputNameDialog("Moved file name", "moved.txt");
+                            attemptCommand(new String[] { "move", selectedMoveFile, path + tmp });
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                attemptCommand(new String[] { "list", path });
+                String fileList[] = getFileList();
+                updateJlist(fileList);
+                detailPane = null;
+                updateView();
             };
         }
     }
 
     public boolean attemptCommand(String[] args) {
+        // debug
+        String msg = "Command ";
+        for (String s : args) {
+            msg += s + ", ";
+        }
+        System.out.println(msg);
+
         list.clear();
         boolean success;
         try {
@@ -320,6 +401,19 @@ public class Interface {
         body = new InterfaceBody();
         frame.getContentPane().add(body);
         frame.revalidate();
+    }
+
+    public String selectLocalFileDialog() {
+        var fc = new JFileChooser(System.getProperty("user.dir") + "/local-files");
+        fc.showOpenDialog(frame);
+        var path = fc.getSelectedFile().toPath().toString();
+        var file = path.split("client/")[1];
+        return file;
+    }
+
+    public String inputNameDialog(String msg, String name) {
+        String ret = (String) JOptionPane.showInputDialog(frame, msg, name);
+        return ret;
     }
 
 }
