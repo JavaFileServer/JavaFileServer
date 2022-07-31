@@ -1,9 +1,7 @@
 package it.sssupclient.app;
 
-import javax.print.attribute.standard.Copies;
 import javax.swing.*;
 import javax.swing.event.*;
-import javax.swing.plaf.FileChooserUI;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -224,6 +222,7 @@ public class Interface {
             jlist.setLayoutOrientation(JList.VERTICAL);
             jlist.setVisibleRowCount(-1);
             jlist.addListSelectionListener(new MySelectionListener());
+            jlist.addMouseListener(new MyMouseAdapter());
         }
 
         class MySelectionListener implements ListSelectionListener {
@@ -268,6 +267,39 @@ public class Interface {
                 }
                 updateView();
             }
+        }
+
+        class MyMouseAdapter extends MouseAdapter {
+            @Override
+            public void mouseClicked(MouseEvent evt) {
+                final var l = (JList<String>) evt.getSource();
+                if (evt.getClickCount() == 2 && evt.getButton() == MouseEvent.BUTTON1) {
+                    var value = l.getSelectedValue();
+                    // directory
+                    if (l.getSelectedIndex() < firstFile) {
+                        if (value == "..") {
+                            var p = path.split("/");
+                            path = "";
+                            for (var i = 0; i < p.length - 1; i++) {
+                                path += p[i] + "/";
+                            }
+                        } else {
+                            path = value;
+                        }
+                        attemptCommand(new String[] { "list", path });
+                        String fileList[] = getFileList();
+                        updateJlist(fileList);
+                        detailPane = null;
+                        updateView();
+                    }
+                    // file
+                    else {
+                        var tmp = inputNameDialog("Save file as:", "downloaded.txt");
+                        attemptCommand(new String[] { "read", "local-files/" + tmp, l.getSelectedValue() });
+                    }
+
+                }
+            };
         }
 
         class NavigateTapListener implements ActionListener {
@@ -327,7 +359,7 @@ public class Interface {
                         break;
                     case "download":
                         tmp = inputNameDialog("Save file as:", "downloaded.txt");
-                        attemptCommand(new String[] { "read", tmp, "local-file/" + name });
+                        attemptCommand(new String[] { "read", "local-files/" + tmp, name });
                         break;
                     case "replace":
                         tmp = selectLocalFileDialog();
@@ -353,9 +385,11 @@ public class Interface {
                         if (copying) {
                             tmp = inputNameDialog("Copy name:", "copy.txt");
                             attemptCommand(new String[] { "copy", selectedMoveFile, path + tmp });
+                            selectedMoveFile = null;
                         } else {
                             tmp = inputNameDialog("Moved file name", "moved.txt");
                             attemptCommand(new String[] { "move", selectedMoveFile, path + tmp });
+                            selectedMoveFile = null;
                         }
                         break;
                     default:
@@ -371,12 +405,12 @@ public class Interface {
     }
 
     public boolean attemptCommand(String[] args) {
-        // debug
-        String msg = "Command ";
-        for (String s : args) {
-            msg += s + ", ";
-        }
-        System.out.println(msg);
+        // // debug
+        // String msg = "Command ";
+        // for (String s : args) {
+        //     msg += s + ", ";
+        // }
+        // System.out.println(msg);
 
         list.clear();
         boolean success;
@@ -415,5 +449,7 @@ public class Interface {
         String ret = (String) JOptionPane.showInputDialog(frame, msg, name);
         return ret;
     }
-
+    public static void main(String[] args) throws Exception {
+        new Interface("", "localhost", 5050);
+    }
 }

@@ -222,10 +222,10 @@ public class App {
     }
 
     public static void main(String[] args) throws Exception {
-
-        Interface gui = new Interface(username, host, port);
-        // gui.init();
-
-        // execute(args);
+        var response = new ArrayList<String>();
+        execute(args, response, username, host, port);
+        for (var elem : response){
+            System.out.println(elem);
+        }
     }
 }
