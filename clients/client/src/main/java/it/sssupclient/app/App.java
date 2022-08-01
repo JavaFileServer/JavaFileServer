@@ -221,9 +221,16 @@ public class App {
         return handle(args, response, username, host, port);
     }
 
+    public static boolean execute(String[] args, ArrayList<String> response)
+            throws Exception {
+        addCommmands();
+        args = extract_globals(args);
+        return handle(args, response, username, host, port);
+    }
+
     public static void main(String[] args) throws Exception {
         var response = new ArrayList<String>();
-        execute(args, response, username, host, port);
+        execute(args, response);
         for (var elem : response){
             System.out.println(elem);
         }
